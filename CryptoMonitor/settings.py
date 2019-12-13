@@ -134,3 +134,8 @@ WEBPACK_LOADER = {
         'STATS_FILE': os.path.join(FRONTEND_DIR, 'webpack-stats.json'),
     }
 }
+
+
+# Email config
+EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
+EMAIL_FILE_PATH='/tmp/django-email-dev'

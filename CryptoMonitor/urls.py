@@ -22,5 +22,6 @@ urlpatterns = [
     path("",
          TemplateView.as_view(template_name="application.html"),
          name="app",
-         )
+         ),
+    path("auth/", include("RESTAuth.urls"))
 ]
