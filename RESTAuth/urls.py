@@ -1,6 +1,5 @@
 from django.urls import path
-from authenticate import views
-from rest_framework.urlpatterns import format_suffix_patterns
+from RESTAuth import views
 
 urlpatterns = [
     path('registration/', views.UserRegistration.as_view())
