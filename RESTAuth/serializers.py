@@ -1,7 +1,7 @@
+from RESTAuth.models import RegistrationMessage, LoginMessage
+
 from django.contrib.auth.models import User
 from rest_framework import serializers
-
-from RESTAuth.models import RegistrationMessage
 from rest_framework.exceptions import ValidationError
 
 
@@ -9,6 +9,12 @@ class RegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = RegistrationMessage
         fields = ["success"]
+
+
+class LoginSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LoginMessage
+        fields = ["success", "username"]
 
 
 class UserSerializer(serializers.ModelSerializer):

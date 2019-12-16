@@ -135,7 +135,4 @@ WEBPACK_LOADER = {
     }
 }
 
-
-# Email config
-EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
-EMAIL_FILE_PATH='/tmp/django-email-dev'
+AUTHENTICATION_BACKENDS = ['django.contrib.auth.backends.ModelBackend']
