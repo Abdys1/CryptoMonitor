@@ -1,27 +1,18 @@
-from RESTAuth.models import RegistrationMessage, LoginMessage
-
 from django.contrib.auth.models import User
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 
-class RegistrationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = RegistrationMessage
-        fields = ["success"]
-
-
-class LoginSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = LoginMessage
-        fields = ["success", "username"]
-
-
 class UserSerializer(serializers.ModelSerializer):
-    def validate(self, attrs):
-        if attrs["email"] == "" or len(attrs["username"]) < 4:
-            raise ValidationError("Not valid user")
-        return attrs
+    def validate_email(self, value):
+        if value == "":
+            raise ValidationError("Adjon meg egy email címet!")
+        return value
+
+    def validate_username(self, value):
+        if len(value) < 4:
+            raise ValidationError("Túl rövid felhasználónév!")
+        return value
 
     class Meta:
         model = User

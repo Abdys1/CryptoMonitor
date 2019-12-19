@@ -4,8 +4,7 @@ from django.contrib.sessions.middleware import SessionMiddleware
 from django.core import mail
 from django.test import TestCase, RequestFactory
 
-from RESTAuth.serializers import RegistrationSerializer
-from RESTAuth.auth import sign_up, activate_user, login_user
+from RESTAuth.auth import UserRegistrationHandler, activate_user, UserLoginHandler
 from RESTAuth.tokens import account_activation_token
 
 
@@ -14,60 +13,71 @@ class RegistrationTest(TestCase):
         self.valid_user = {"username": "User", "email": "example@gmail.com", "password": "1221313"}
         self.invalid_user = {"username": "User2", "email": "", "password": "1221313"}
 
-    def test_has_reg_message(self):
-        reg_message = sign_up(self.valid_user)
-        self.assertIsNotNone(reg_message)
+    def test_can_sign_up(self):
+        reg = UserRegistrationHandler(self.valid_user)
+        success = reg.sign_up()
+        self.assertIsNotNone(success)
 
-    def test_message_is_serialized(self):
-        reg_message = sign_up(self.valid_user)
-        is_reg_serializer = isinstance(reg_message, RegistrationSerializer)
-        self.assertTrue(is_reg_serializer)
+    def test_when_sign_up_is_success_then_send_true(self):
+        reg = UserRegistrationHandler(self.valid_user)
+        success = reg.sign_up()
+        self.assertTrue(success)
 
-    def test_send_success_message_when_registration_is_valid(self):
-        reg_message = sign_up(self.valid_user)
-        self.assertTrue(reg_message.data["success"])
+    def test_when_user_try_sign_up_with_invalid_data_then_send_false(self):
+        reg = UserRegistrationHandler(self.invalid_user)
+        success = reg.sign_up()
+        self.assertFalse(success)
 
-    def test_send_not_success_message_when_user_has_not_mail(self):
-        reg_message = sign_up(self.invalid_user)
-        self.assertFalse(reg_message.data["success"])
+    def test_when_user_try_sign_up_with_invalid_data_then_has_error_message(self):
+        reg = UserRegistrationHandler(self.invalid_user)
+        success = reg.sign_up()
+        self.assertFalse(success)
+        self.assertIsNotNone(reg.errors)
 
-    def test_send_not_success_message_when_user_has_not_username(self):
-        self.invalid_user["username"] = ""
-        self.invalid_user["email"] = "example2@gmail.com"
-        reg_message = sign_up(self.invalid_user)
-        self.assertFalse(reg_message.data["success"])
+    def test_when_user_try_sign_up_with_short_username_then_send_username_error(self):
+        self.invalid_user["username"] = "asd"
+        self.invalid_user["email"] = "example@example.com"
+        reg = UserRegistrationHandler(self.invalid_user)
+        success = reg.sign_up()
+        self.assertFalse(success)
+        self.assertEqual(reg.errors["username"][0], "Túl rövid felhasználónév!")
 
-    def test_send_not_success_message_when_email_is_not_valid(self):
-        self.invalid_user["email"] = "dasda.com"
-        self.invalid_user["username"] = "User1"
-        reg_message = sign_up(self.invalid_user)
-        self.assertFalse(reg_message.data["success"])
+    def test_when_user_try_sign_up_without_email_then_send_email_error(self):
+        reg = UserRegistrationHandler(self.invalid_user)
+        success = reg.sign_up()
+        self.assertFalse(success)
+        self.assertEqual(reg.errors["email"][0], "Adjon meg egy email címet!")
 
-    def test_save_valid_user_to_the_database(self):
-        sign_up(self.valid_user)
-        username, email, password = self.valid_user.values()
-        user = User.objects.get(username=username)
-        self.assertEqual(username, user.username)
-        self.assertEqual(email, user.email)
+    def test_when_try_sign_up_with_wrong_email_then_send_email_error(self):
+        self.invalid_user["email"] = "dsadadsad.com"
+        reg = UserRegistrationHandler(self.invalid_user)
+        success = reg.sign_up()
+        self.assertFalse(success)
+        self.assertEqual(reg.errors["email"][0], "Adjon meg egy érvényes e-mail címet!")
 
-    def test_send_not_success_message_when_username_is_shorter_as_four_char(self):
-        self.invalid_user["email"] = "example3@gmail.com"
-        self.invalid_user["username"] = "sxd"
-        reg_message = sign_up(self.invalid_user)
-        self.assertFalse(reg_message.data["success"])
+    def test_save_valid_user_to_database(self):
+        reg = UserRegistrationHandler(self.valid_user)
+        success = reg.sign_up()
+        user = User.objects.get(username=self.valid_user.get("username"))
+        self.assertTrue(success)
+        self.assertIsNotNone(user)
 
-    def test_user_is_not_active_after_registration(self):
-        username, email, password = self.valid_user.values()
-        sign_up(self.valid_user)
-        user = User.objects.get(username=username)
+    def test_when_sign_up_user_then_not_active(self):
+        reg = UserRegistrationHandler(self.valid_user)
+        reg.sign_up()
+        user = User.objects.get(username=self.valid_user.get("username"))
         self.assertFalse(user.is_active)
 
-    def test_send_email(self):
-        sign_up(self.valid_user)
-        self.assertEqual(len(mail.outbox), 1)
+    def test_when_try_sign_up_two_same_username(self):
+        reg = UserRegistrationHandler(self.valid_user)
+        reg.sign_up()
+        reg = UserRegistrationHandler(self.valid_user)
+        reg.sign_up()
+        self.assertEqual(reg.errors["username"][0], "Létezik már egy felhasználó ezzel a névvel.")
 
     def test_send_to_user_activate_email(self):
-        sign_up(self.valid_user)
+        reg = UserRegistrationHandler(self.valid_user)
+        reg.sign_up()
         user = User.objects.get(username=self.valid_user["username"])
         user_hash = account_activation_token.generate_token(user)
         activation_link = "/auth/activate?hash=" + user_hash
@@ -78,7 +88,8 @@ class RegistrationTest(TestCase):
         self.assertIn(user.email, send_to)
 
     def test_if_activation_token_is_valid_then_activation_success(self):
-        sign_up(self.valid_user)
+        reg = UserRegistrationHandler(self.valid_user)
+        reg.sign_up()
         user = User.objects.get(username=self.valid_user["username"])
         user_hash = account_activation_token.generate_token(user)
         success = activate_user(user_hash)
@@ -89,7 +100,8 @@ class RegistrationTest(TestCase):
         self.assertFalse(success)
 
     def test_user_is_active_after_activation(self):
-        sign_up(self.valid_user)
+        reg = UserRegistrationHandler(self.valid_user)
+        reg.sign_up()
         user = User.objects.get(username=self.valid_user["username"])
         user_hash = account_activation_token.generate_token(user)
         activate_user(user_hash)
@@ -100,14 +112,16 @@ class RegistrationTest(TestCase):
 class LoginTest(TestCase):
     def setUp(self):
         self.activated_user_data = {"username": "User", "email": "example@gmail.com", "password": "1221313"}
-        sign_up(self.activated_user_data)
+        reg = UserRegistrationHandler(self.activated_user_data)
+        reg.sign_up()
         username = self.activated_user_data.get("username")
         user = User.objects.get(username=username)
         user_hash = account_activation_token.generate_token(user)
         activate_user(user_hash)
 
         self.inactive_user_data = {"username": "User2", "email": "example2@gmail.com", "password": "jelszo12345"}
-        sign_up(self.inactive_user_data)
+        reg = UserRegistrationHandler(self.inactive_user_data)
+        reg.sign_up()
 
         rf = RequestFactory()
         self.request = rf.post("/login")
@@ -115,31 +129,29 @@ class LoginTest(TestCase):
         middleware.process_request(self.request)
         self.request.session.save()
 
-    def test_has_login_message(self):
-        login_message = login_user(self.request, self.activated_user_data.get("username"), self.activated_user_data.get("password"))
-        self.assertIsNotNone(login_message)
+        self.loginHandler = UserLoginHandler(self.request)
 
     def test_when_the_user_exists_and_the_password_match_then_send_success_message(self):
-        login_message = login_user(self.request, self.activated_user_data.get("username"), self.activated_user_data.get("password"))
-        self.assertTrue(login_message.data["success"])
+        success = self.loginHandler.login_user(self.activated_user_data.get("username"), self.activated_user_data.get("password"))
+        self.assertTrue(success)
 
     def test_when_the_user_exists_and_the_password_not_match(self):
-        login_message = login_user(self.request, self.activated_user_data.get("username"), self.inactive_user_data.get("password"))
-        self.assertFalse(login_message.data["success"])
+        success = self.loginHandler.login_user(self.activated_user_data.get("username"), self.inactive_user_data.get("password"))
+        self.assertFalse(success)
 
     def test_when_the_user_is_inactive_then_send_not_success(self):
-        login_message = login_user(self.request, self.inactive_user_data.get("username"), self.inactive_user_data.get("password"))
-        self.assertFalse(login_message.data["success"])
+        success = self.loginHandler.login_user(self.inactive_user_data.get("username"), self.inactive_user_data.get("password"))
+        self.assertFalse(success)
 
-    def test_when_user_not_exists_send_not_success(self):
-        login_message = login_user(self.request, "nemletezik", "ezsem")
-        self.assertFalse(login_message.data["success"])
+    def test_when_user_not_exists_send_error(self):
+        self.loginHandler.login_user("nemletezik", "ezsem")
+        self.assertEqual(self.loginHandler.messages["error"], "Helytelen belépési adatok!")
 
     def test_when_login_is_success_then_send_username(self):
-        login_message = login_user(self.request, self.activated_user_data.get("username"), self.activated_user_data.get("password"))
-        self.assertEqual(login_message.data["username"], self.activated_user_data.get("username"))
+        self.loginHandler.login_user(self.activated_user_data.get("username"), self.activated_user_data.get("password"))
+        self.assertEqual(self.loginHandler.messages["username"], self.activated_user_data.get("username"))
 
     def test_when_login_is_success_add_session_for_user(self):
-        login_user(self.request, self.activated_user_data.get("username"), self.activated_user_data.get("password"))
+        self.loginHandler.login_user(self.activated_user_data.get("username"), self.activated_user_data.get("password"))
         user = auth.get_user(self.request)
         self.assertTrue(user.is_authenticated)
