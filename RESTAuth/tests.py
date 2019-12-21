@@ -68,12 +68,21 @@ class RegistrationTest(TestCase):
         user = User.objects.get(username=self.valid_user.get("username"))
         self.assertFalse(user.is_active)
 
-    def test_when_try_sign_up_two_same_username(self):
+    def test_try_sign_up_two_same_username(self):
         reg = UserRegistrationHandler(self.valid_user)
         reg.sign_up()
         reg = UserRegistrationHandler(self.valid_user)
         reg.sign_up()
         self.assertEqual(reg.errors["username"][0], "Létezik már egy felhasználó ezzel a névvel.")
+
+    def test_try_sign_up_with_same_email_then_send_error(self):
+        self.valid_user["username"] = "User1"
+        reg = UserRegistrationHandler(self.valid_user)
+        reg.sign_up()
+        self.valid_user["username"] = "User2"
+        reg = UserRegistrationHandler(self.valid_user)
+        reg.sign_up()
+        self.assertEqual(reg.errors["email"][0], "Létezik már egy felhasználó ezzel az e-mail címmel!")
 
     def test_send_to_user_activate_email(self):
         reg = UserRegistrationHandler(self.valid_user)

@@ -21,7 +21,7 @@ class UserRegistrationHandler:
                                             password=serialized_user.data["password"])
             user.is_active = False
             user.save()
-            self.send_activation_message(user)
+            # self.send_activation_message(user)
             success = True
         else:
             success = False

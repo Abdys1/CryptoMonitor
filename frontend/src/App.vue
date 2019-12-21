@@ -1,5 +1,7 @@
 <template>
-  <Registration></Registration>
+  <v-app>
+      <Registration></Registration>
+  </v-app>
 </template>
 
 <script>

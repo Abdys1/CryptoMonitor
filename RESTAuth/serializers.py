@@ -5,8 +5,15 @@ from rest_framework.exceptions import ValidationError
 
 class UserSerializer(serializers.ModelSerializer):
     def validate_email(self, value):
+        try:
+            user_with_same_email = User.objects.get(email=value)
+        except:
+            user_with_same_email = None
+
         if value == "":
             raise ValidationError("Adjon meg egy email címet!")
+        if user_with_same_email is not None:
+            raise ValidationError("Létezik már egy felhasználó ezzel az e-mail címmel!")
         return value
 
     def validate_username(self, value):
