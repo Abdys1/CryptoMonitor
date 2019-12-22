@@ -15,7 +15,7 @@
             <v-btn
               color="green darken-1"
               text
-              @click="show=false"
+              @click="close"
             >
               Értettem!
             </v-btn>
@@ -41,6 +41,11 @@
               set (value) {
                  this.$emit('input', value)
               }
+            }
+        },
+        methods: {
+            close() {
+              this.$emit('verify-message', "Sikerersen bezártad az ablakot!")
             }
         }
     }

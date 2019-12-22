@@ -51,6 +51,7 @@
                         title="Sikeres regisztráció"
                         message="Mielőtt bejelentkeznél, kérlek aktiváld a profilodat!"
                         v-model="dialog"
+                        @verify-message="redirectLoginPage"
                 ></InfoModal>
             </v-col>
         </v-row>
@@ -114,6 +115,10 @@
                     this.error = errors.username[0]
                 else if(errors.hasOwnProperty("email"))
                     this.error = errors.email[0]
+            },
+            redirectLoginPage: function (event, value) {
+                window.console.log(value)
+                this.$router.push("/login")
             }
         }
     }
