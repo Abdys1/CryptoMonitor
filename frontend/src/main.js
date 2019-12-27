@@ -4,20 +4,27 @@ import VueSession from "vue-session";
 import App from './App.vue'
 import vuetify from './plugins/vuetify';
 import axios from 'axios';
-// import Authentication from "./components/Authentication";
 import CryptoMonitor from "./components/CryptoMonitor";
-import Registration from "./components/Registration";
+// import Registration from "./components/Registration";
+// import Login from "./components/Login";
+import Authentication from "./Authentication";
 import Login from "./components/Login";
+import Registration from "./components/Registration";
 
 Vue.config.productionTip = false
 Vue.use(VueRouter)
 Vue.use(VueSession)
+
 axios.baseUrl = "https://127.0.0.1:8000"
+axios.defaults.xsrfCookieName = 'csrftoken'
+axios.defaults.xsrfHeaderName = "X-CSRFTOKEN"
 
 const routes = [
-  {path: "/registration", component: Registration},
-  {path: "/login", component: Login},
-  {path: "/", redirect: "/login"},
+  {path: "", component: Authentication,
+    children: [
+      {path: "/login", component: Login},
+      {path: "/registration", component: Registration}
+    ]},
   {path: "/monitor", component: CryptoMonitor}
 ]
 

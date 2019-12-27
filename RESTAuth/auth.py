@@ -1,10 +1,10 @@
 from RESTAuth.serializers import UserSerializer
 from RESTAuth.tokens import account_activation_token
-from django.contrib.auth import authenticate, login
 
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.contrib.auth.models import User
+from rest_framework.authtoken.models import Token
 
 
 class UserRegistrationHandler:
@@ -19,8 +19,9 @@ class UserRegistrationHandler:
             user = User.objects.create_user(username=serialized_user.data["username"],
                                             email=serialized_user.data["email"],
                                             password=serialized_user.data["password"])
-            user.is_active = False
+            user.is_active = True
             user.save()
+            Token.objects.create(user=user)
             # self.send_activation_message(user)
             success = True
         else:
@@ -52,22 +53,3 @@ def activate_user(activation_token) -> bool:
             break
 
     return success
-
-
-class UserLoginHandler:
-    def __init__(self, request) -> None:
-        self.request = request
-        self.messages = {}
-
-    def login_user(self, username, password) -> bool:
-        self.messages = {}
-        user = authenticate(request=self.request, username=username, password=password)
-        if user is not None:
-            login(self.request, user)
-            success = True
-            self.messages["username"] = user.username
-        else:
-            self.messages["error"] = "Helytelen belépési adatok!"
-            success = False
-
-        return success

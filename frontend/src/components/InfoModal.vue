@@ -4,7 +4,7 @@
         v-model="show"
         max-width="290"
       >
-        <v-card>
+        <v-card style="background-color: black">
           <v-card-title class="headline">{{ title }}</v-card-title>
 
           <v-card-text>

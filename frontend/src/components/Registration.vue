@@ -42,14 +42,19 @@
                         required
                     ></v-text-field>
                 </v-form>
-                  <v-btn
-                    @click="signUp"
-                >
-                    Regisztráció
-                </v-btn>
+                <v-layout row wrap>
+                   <v-layout justify-start="">
+                       <p>Már regisztrált? <router-link to="/login">Bejelentkezés</router-link></p>
+                   </v-layout>
+                   <v-layout justify-end="">
+                        <v-btn @click="signUp">
+                            Regisztráció
+                        </v-btn>
+                   </v-layout>
+               </v-layout>
                 <InfoModal
                         title="Sikeres regisztráció"
-                        message="Mielőtt bejelentkeznél, kérlek aktiváld a profilodat!"
+                        message="Most már bejelentkezhet!"
                         v-model="dialog"
                         @verify-message="redirectLoginPage"
                 ></InfoModal>
@@ -72,7 +77,7 @@
                 username: "",
                 usernameRules: [
                     v => !!v || "Kérem adjon meg egy felhasználónevet!",
-                    v => (v && v.length > 4) || "Kérem adjon meg legalább 4 karakter hosszú felhasználónevet!",
+                    v => (v && v.length > 4) || "Kérem adjon meg legalább 5 karakter hosszú felhasználónevet!",
                     v => (v && v.length < 16) || "Túl hosszú felhasználónév!"
                 ],
                 email: "",
@@ -81,7 +86,7 @@
                 ],
                 password: "",
                 passwordRules: [
-                    v => (!!v && v.length > 6) || "Kérem adjon meg legalább 6 karakter hosszú jelszót!",
+                    v => (!!v && v.length > 6) || "Kérem adjon meg legalább 7 karakter hosszú jelszót!",
                     v => (!!v && v.length < 25) || "Túl hosszú jelszó!"
                 ],
                 passwordVerify: "",
@@ -94,11 +99,12 @@
         methods: {
             signUp: function () {
                 if(this.$refs.form.validate()) {
-                    axios.post("/auth/registration", {
+                    axios.post("/auth/registration/", {
                         username: this.username,
                         email: this.email,
                         password: this.password
-                    }).then(response => {
+                    }
+                    ).then(response => {
                         if(response.status === 200) {
                             const errors = JSON.parse(response.data)
                             this.getFirstError(errors)
