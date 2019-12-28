@@ -5,8 +5,6 @@ import App from './App.vue'
 import vuetify from './plugins/vuetify';
 import axios from 'axios';
 import CryptoMonitor from "./components/CryptoMonitor";
-// import Registration from "./components/Registration";
-// import Login from "./components/Login";
 import Authentication from "./Authentication";
 import Login from "./components/Login";
 import Registration from "./components/Registration";

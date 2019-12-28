@@ -30,15 +30,16 @@ class UserRegistrationHandler:
 
         return success
 
-    def send_activation_message(self, user) -> None:
-        token = account_activation_token.generate_token(user)
-        domain = '127.0.0.1:8000'
-        message = render_to_string("account_activation_message.html", {
-            "user": user,
-            "token": token,
-            "domain": domain
-        })
-        send_mail("Profil aktiválása", message, "kriptomonitor@gmail.com", [user.email], fail_silently=False)
+
+def send_activation_message(user) -> None:
+    token = account_activation_token.generate_token(user)
+    domain = '127.0.0.1:8000'
+    message = render_to_string("account_activation_message.html", {
+        "user": user,
+        "token": token,
+        "domain": domain
+    })
+    send_mail("Profil aktiválása", message, "kriptomonitor@gmail.com", [user.email], fail_silently=False)
 
 
 def activate_user(activation_token) -> bool:

@@ -40,7 +40,8 @@ INSTALLED_APPS = [
     'webpack_loader',
     'rest_framework',
     'rest_framework.authtoken',
-    'RESTAuth.apps.AuthenticateConfig'
+    'RESTAuth.apps.AuthenticateConfig',
+    'monitor.apps.MonitorConfig'
 ]
 
 MIDDLEWARE = [
@@ -131,17 +132,17 @@ STATIC_URL = '/static/'
 WEBPACK_LOADER = {
     'DEFAULT': {
         'CACHE': DEBUG,
-        'BUNDLE_DIR_NAME': '/bundles/',  # must end with slash
+        'BUNDLE_DIR_NAME': '/bundles/',
         'STATS_FILE': os.path.join(FRONTEND_DIR, 'webpack-stats.json'),
     }
 }
 
 AUTHENTICATION_BACKENDS = ['django.contrib.auth.backends.ModelBackend']
-#
-# REST_FRAMEWORK = {
-#     'DEFAULT_AUTHENTICATION_CLASSES': (
-#         'rest_framework.authentication.TokenAuthentication',
-#     ),
-#     'DEFAULT_PERMISSION_CLASSES': (
-#         'rest_framework.permissions.IsAuthenticated', )
-# }
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.TokenAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated', )
+}

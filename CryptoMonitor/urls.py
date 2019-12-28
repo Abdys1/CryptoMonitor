@@ -22,6 +22,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path('api-token-auth/', obtain_auth_token, name='api_token_auth'),
     path("auth/", include("RESTAuth.urls")),
+    path("api/", include("monitor.urls")),
     re_path("",
          TemplateView.as_view(template_name="application.html"),
          name="app",
