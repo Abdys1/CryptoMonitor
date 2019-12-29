@@ -1,21 +1,14 @@
 <template>
-    <h1>Kriptomonitor</h1>
+    <v-app>
+        <TransactionCreator></TransactionCreator>
+    </v-app>
 </template>
 
 <script>
+    import TransactionCreator from "./TransactionCreator";
     export default {
         name: "CryptoMonitor",
-        methods: {
-            logout: function () {
-                this.$session.destroy()
-                this.$router.push("/")
-            }
-        },
-        beforeCreate() {
-          if(!this.$session.exists()) {
-              this.$router.push("/login")
-          }
-        }
+        components: {TransactionCreator}
     }
 </script>
 

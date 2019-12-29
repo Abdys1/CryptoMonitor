@@ -4,10 +4,10 @@ import VueSession from "vue-session";
 import App from './App.vue'
 import vuetify from './plugins/vuetify';
 import axios from 'axios';
-import CryptoMonitor from "./components/CryptoMonitor";
 import Authentication from "./Authentication";
 import Login from "./components/Login";
 import Registration from "./components/Registration";
+import CryptoMonitor from "./components/CryptoMonitor";
 
 Vue.config.productionTip = false
 Vue.use(VueRouter)

@@ -1,8 +1,8 @@
 <template>
   <v-app>
-      <router-view>
+    <router-view>
 
-      </router-view>
+    </router-view>
   </v-app>
 </template>
 
@@ -14,8 +14,10 @@ export default {
   components: {
   },
 
-  data: () => ({
-  }),
+  data: function() {
+      return {
+      }
+  },
 
 };
 </script>
