@@ -39,8 +39,6 @@
 </template>
 
 <script>
-    import axios from 'axios'
-
     export default {
         name: "Login",
         data: function () {
@@ -53,7 +51,7 @@
         methods: {
             signIn: function () {
                 if(this.username !== "" && this.password !== "") {
-                     axios.post("/api-token-auth/", {
+                     this.$http.post("/api-token-auth/", {
                         username: this.username,
                         password: this.password
                     }
@@ -61,10 +59,12 @@
                         if (response.status === 200 && 'token' in response.data) {
                             this.$session.start()
                             this.$session.set('jwt', response.data.token)
+                            localStorage.setItem("token", response.data.token)
                             this.$router.push('/monitor')
                         }
                     }).catch(err => {
                         this.error = "Helytelen felhasználónév vagy jelszó!"
+                        localStorage.removeItem("token")
                         window.console.log(err)
                     })
                 }

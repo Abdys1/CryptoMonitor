@@ -64,7 +64,6 @@
 </template>
 
 <script>
-    import axios from 'axios'
     import InfoModal from "./InfoModal";
 
     export default {
@@ -99,7 +98,7 @@
         methods: {
             signUp: function () {
                 if(this.$refs.form.validate()) {
-                    axios.post("/auth/registration/", {
+                    this.$http.post("/auth/registration/", {
                         username: this.username,
                         email: this.email,
                         password: this.password

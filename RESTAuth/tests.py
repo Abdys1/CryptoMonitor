@@ -1,8 +1,10 @@
 from django.contrib.auth.models import User
-from django.test import TestCase, RequestFactory
+from django.test import TestCase
 
 from RESTAuth.auth import UserRegistrationHandler, activate_user
+from rest_framework import status
 from rest_framework.authtoken.models import Token
+from rest_framework.test import APITestCase
 
 
 class RegistrationTest(TestCase):
@@ -119,3 +121,32 @@ class RegistrationTest(TestCase):
         reg.sign_up()
         user = User.objects.get(username=self.valid_user["username"])
         self.assertIsNotNone(Token.objects.get(user=user))
+
+
+class AccountInformationTest(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create(username="User", password="1234567", email="example@gmail.com")
+        self.token = Token.objects.create(user=self.user)
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + str(self.token))
+
+    def test_has_OK_response_when_get_account_information(self):
+        response = self.client.get("/auth/account")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_has_account_info_in_response(self):
+        response = self.client.get("/auth/account")
+        self.assertIsNotNone(response.data)
+        self.assertTrue("id" in response.data)
+        self.assertTrue("username" in response.data)
+        self.assertTrue("email" in response.data)
+
+    def test_account_infos_agree(self):
+        response = self.client.get("/auth/account")
+        self.assertEqual(self.user.pk, response.data.get("id"))
+        self.assertEqual(self.user.username, response.data.get("username"))
+        self.assertEqual(self.user.email, response.data.get("email"))
+
+    def test_cannot_get_infos_when_not_authorized(self):
+        self.client.credentials(HTTP_AUTHORIZATION="")
+        response = self.client.get("/auth/account")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

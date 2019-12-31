@@ -35,3 +35,18 @@ class MonitorTest(APITestCase):
                                      "owner": self.other_user.pk},
                                     format="json")
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_cannot_create_transaction_when_owner_is_doesnt_exist(self):
+        response = self.client.post("/api/create-transaction/",
+                                    {"quantity": self.quantity, "purchase_price": self.price, "date_of_purchase": self.actual_time,
+                                     "owner": -1},
+                                    format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_cannot_create_empty_transaction(self):
+        response = self.client.post("/api/create-transaction/",
+                                    {"quantity": None, "purchase_price": None,
+                                     "date_of_purchase": None,
+                                     "owner": self.user.pk},
+                                    format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
