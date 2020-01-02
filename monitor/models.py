@@ -8,11 +8,8 @@ class Transaction(models.Model):
     date_of_purchase = models.DateTimeField(null=False, default=None)
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
 
-    @classmethod
-    def create(cls, quantity, purchase_price, date_of_purchase, owner):
-        trans = Transaction()
-        trans.quantity = quantity
-        trans.date_of_purchase = date_of_purchase
-        trans.actual_price = purchase_price
-        trans.owner = owner
-        return trans
+    def __str__(self):
+        return "(quantity=" + str(self.quantity) + \
+               ", purchase_price=" + str(self.purchase_price) + \
+               ", date_of_purchase=" + str(self.date_of_purchase) + \
+               ", owner=" + str(self.owner) + ")"

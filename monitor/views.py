@@ -4,9 +4,10 @@ from rest_framework import mixins, generics, status
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
 from monitor.serializers import TransactionSerializer
-from rest_framework.response import Response
+from monitor.models import Transaction
 
 
 class TransactionDetail(mixins.CreateModelMixin, generics.GenericAPIView):
@@ -28,3 +29,9 @@ class TransactionDetail(mixins.CreateModelMixin, generics.GenericAPIView):
                 return Response(status=status.HTTP_403_FORBIDDEN)
         except ObjectDoesNotExist:
             return Response(status=status.HTTP_400_BAD_REQUEST)
+
+    def get(self, request):
+        user = request.user
+        transactions = Transaction.objects.filter(owner=user)
+        serializer = TransactionSerializer(transactions, many=True)
+        return Response(data=serializer.data)

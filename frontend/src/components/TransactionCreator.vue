@@ -1,24 +1,16 @@
 <template>
     <v-row>
         <v-col>
-<!--            <v-alert-->
-<!--                    border="top"-->
-<!--                    colored-border-->
-<!--                    type="info"-->
-<!--                    elevation="2"-->
-<!--                    v-show="error !== ''"-->
-<!--                    transition="scale-transition"-->
-<!--            >{{error}}</v-alert>-->
             <v-form ref="form">
                 <v-text-field
-                    label="Aktuális érték a vásárlás időpontjában"
+                    label="Árfolyam"
                     prefix="$"
                     type="number"
                     v-model="amount"
                     :rules="validateRules"
                 ></v-text-field>
                 <v-text-field
-                    label="Bitcoin mennyiség"
+                    label="Mennyiség"
                     v-model="quantity"
                     type="number"
                     :rules="validateRules"
@@ -111,7 +103,7 @@
                     let dateString = this.date + " " + this.time
                     const purchaseDate = new Date(dateString)
 
-                    this.$http.post("/api/create-transaction/", {
+                    this.$http.post("/api/transaction/", {
                         quantity: this.quantity,
                         purchase_price: this.amount,
                         date_of_purchase: purchaseDate,
