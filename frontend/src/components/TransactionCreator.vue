@@ -108,7 +108,10 @@
                         purchase_price: this.amount,
                         date_of_purchase: purchaseDate,
                         owner: this.userID
-                    }).then(() => this.dialog = true)
+                    }).then(() => {
+                        this.dialog = true
+                        this.$emit("created")
+                    })
                       .catch(err => window.console.log(err))
                 }
             },
