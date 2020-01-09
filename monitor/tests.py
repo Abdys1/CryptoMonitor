@@ -1,5 +1,6 @@
 import requests
 from django.contrib.auth.models import User
+from django.test import TestCase
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.authtoken.models import Token
@@ -8,6 +9,7 @@ from django.core.exceptions import ObjectDoesNotExist
 
 from monitor.serializers import TransactionSerializer
 from monitor.models import Transaction
+from monitor.service import CryptoMarket
 
 
 class TransactionMonitorTest(APITestCase):
@@ -61,7 +63,7 @@ class TransactionMonitorTest(APITestCase):
                                     format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_can_create_transaction_with_float_purchase_price(self):
+    def test_can_create_transaction_with_float_purchase_price(self) -> None:
         response = self.client.post(self.url,
                                     {"quantity": self.quantity,
                                      "purchase_price": 7321.23,
@@ -70,15 +72,15 @@ class TransactionMonitorTest(APITestCase):
                                     format="json")
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
-    def test_when_get_transactions_then_send_list(self):
+    def test_when_get_transactions_then_send_list(self) -> None:
         response = self.client.get(self.url)
         self.assertIsInstance(response.data, list)
 
-    def test_send_empty_list_when_user_has_not_transaction(self):
+    def test_send_empty_list_when_user_has_not_transaction(self) -> None:
         response = self.client.get(self.url)
         self.assertListEqual(response.data, [])
 
-    def test_transactions_in_list_exists_when_not_empty(self):
+    def test_transactions_in_list_exists_when_not_empty(self) -> None:
         Transaction.objects.create(quantity=213, purchase_price=3213, date_of_purchase=self.actual_time,
                                    owner=self.user)
         Transaction.objects.create(quantity=7400, purchase_price=22, date_of_purchase=self.actual_time, owner=self.user)
@@ -95,7 +97,7 @@ class TransactionMonitorTest(APITestCase):
         else:
             self.fail("Transactions is empty!")
 
-    def test_get_only_the_authorized_users_transactions(self):
+    def test_get_only_the_authorized_users_transactions(self) -> None:
         Transaction.objects.create(quantity=213, purchase_price=3213, date_of_purchase=self.actual_time,
                                    owner=self.other_user)
         user_transactions = [Transaction.objects.create(quantity=22, purchase_price=7400, date_of_purchase=self.actual_time, owner=self.user),
@@ -103,3 +105,31 @@ class TransactionMonitorTest(APITestCase):
         serialized_transactions = TransactionSerializer(user_transactions, many=True)
         response = self.client.get(self.url)
         self.assertListEqual(serialized_transactions.data, response.data)
+
+
+class CryptoMarketAPITest(TestCase):
+    def setUp(self) -> None:
+        self.market = CryptoMarket()
+
+    def test_status_is_none_when_not_send_request(self) -> None:
+        self.assertIsNone(self.market.status)
+
+    def test_status_is_not_none_when_send_request_to_api_server(self) -> None:
+        self.market.get_exchange_rate()
+        self.assertIsNotNone(self.market.status)
+
+    def test_status_is_200_when_request_is_success(self) -> None:
+        self.market.get_exchange_rate()
+        self.assertEqual(self.market.status, 200)
+
+    def test_has_response_when_get_exchange_rate(self) -> None:
+        self.assertIsNotNone(self.market.get_exchange_rate())
+
+    def test_the_response_type_is_float_when_get_exchange_rate(self) -> None:
+        is_float = isinstance(self.market.get_exchange_rate(), float)
+        self.assertTrue(is_float)
+
+    def test_when_get_exchange_rate_then_response_right_exchange_rate(self) -> None:
+        req_response = requests.get("https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT")
+        mark_response = self.market.get_exchange_rate()
+        self.assertEqual(float(req_response.json().get("price")), mark_response)
