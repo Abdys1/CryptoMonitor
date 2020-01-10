@@ -9,7 +9,7 @@ from django.core.exceptions import ObjectDoesNotExist
 
 from monitor.serializers import TransactionSerializer
 from monitor.models import Transaction
-from monitor.service import CryptoMarket
+from monitor.service import market
 
 
 class TransactionMonitorTest(APITestCase):
@@ -106,30 +106,21 @@ class TransactionMonitorTest(APITestCase):
         response = self.client.get(self.url)
         self.assertListEqual(serialized_transactions.data, response.data)
 
+    def test_when_get_exchange_rate_and_not_throw_exception_then_has_response(self):
+        response = self.client.get("/api/price")
+        self.assertIsNotNone(response.data.get("exchange_rate"))
+
 
 class CryptoMarketAPITest(TestCase):
-    def setUp(self) -> None:
-        self.market = CryptoMarket()
-
-    def test_status_is_none_when_not_send_request(self) -> None:
-        self.assertIsNone(self.market.status)
-
-    def test_status_is_not_none_when_send_request_to_api_server(self) -> None:
-        self.market.get_exchange_rate()
-        self.assertIsNotNone(self.market.status)
-
-    def test_status_is_200_when_request_is_success(self) -> None:
-        self.market.get_exchange_rate()
-        self.assertEqual(self.market.status, 200)
-
     def test_has_response_when_get_exchange_rate(self) -> None:
-        self.assertIsNotNone(self.market.get_exchange_rate())
+        self.assertIsNotNone(market.get_exchange_rate())
 
-    def test_the_response_type_is_float_when_get_exchange_rate(self) -> None:
-        is_float = isinstance(self.market.get_exchange_rate(), float)
+    def test_the_return_type_is_float_when_get_exchange_rate(self) -> None:
+        is_float = isinstance(market.get_exchange_rate(), float)
         self.assertTrue(is_float)
 
-    def test_when_get_exchange_rate_then_response_right_exchange_rate(self) -> None:
+    def test_when_get_exchange_rate_then_return_right_exchange_rate(self) -> None:
         req_response = requests.get("https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT")
-        mark_response = self.market.get_exchange_rate()
-        self.assertEqual(float(req_response.json().get("price")), mark_response)
+        mark_response = market.get_exchange_rate()
+        if abs(float(req_response.json().get("price")) - mark_response) > 5:
+            self.fail("Not right exchange rate!")
