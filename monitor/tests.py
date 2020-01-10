@@ -52,7 +52,7 @@ class TransactionMonitorTest(APITestCase):
                                      "date_of_purchase": self.actual_time,
                                      "owner": -1},
                                     format="json")
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_cannot_create_empty_transaction(self) -> None:
         response = self.client.post(self.url,
@@ -106,8 +106,9 @@ class TransactionMonitorTest(APITestCase):
         response = self.client.get(self.url)
         self.assertListEqual(serialized_transactions.data, response.data)
 
-    def test_when_get_exchange_rate_and_not_throw_exception_then_has_response(self):
-        response = self.client.get("/api/price")
+    def test_when_get_exchange_rate_then_has_response(self) -> None:
+        response = self.client.get("/api/exchangeRate")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIsNotNone(response.data.get("exchange_rate"))
 
 

@@ -3,6 +3,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import mixins, generics, status
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
+from rest_framework.decorators import api_view
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -15,7 +16,7 @@ class TransactionDetail(mixins.CreateModelMixin, generics.GenericAPIView):
     permission_classes = (IsAuthenticated,)
     authentication_classes = (TokenAuthentication,)
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs) -> Response:
         try:
             user = request.user
             user_token = Token.objects.get(user=user)
@@ -28,10 +29,15 @@ class TransactionDetail(mixins.CreateModelMixin, generics.GenericAPIView):
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
         except ObjectDoesNotExist:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response(status=status.HTTP_404_NOT_FOUND)
 
-    def get(self, request):
+    def get(self, request) -> Response:
         user = request.user
         transactions = Transaction.objects.filter(owner=user)
         serializer = TransactionSerializer(transactions, many=True)
         return Response(data=serializer.data)
+
+
+@api_view(['GET'])
+def exchange_rate(request) -> Response:
+    return Response(data={"exchange_rate": ""})
