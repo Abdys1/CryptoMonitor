@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import requests
 from django.contrib.auth.models import User
 from django.test import TestCase
@@ -110,6 +112,14 @@ class TransactionMonitorTest(APITestCase):
         response = self.client.get("/api/exchangeRate")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIsNotNone(response.data.get("exchange_rate"))
+
+    @patch('monitor.service.CryptoMarket.get_exchange_rate')
+    def test_exchange_rate_get_from_market_api(self, exchange_rate_call):
+        actual_rate = 7321.0
+        exchange_rate_call.return_value = actual_rate
+        response = self.client.get("/api/exchangeRate")
+        exchange_rate_call.assert_called_once_with()
+        self.assertEqual(response.data.get("exchange_rate"), actual_rate)
 
 
 class CryptoMarketAPITest(TestCase):

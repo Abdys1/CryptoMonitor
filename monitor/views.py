@@ -9,6 +9,7 @@ from rest_framework.response import Response
 
 from monitor.serializers import TransactionSerializer
 from monitor.models import Transaction
+from monitor.service import market
 
 
 class TransactionDetail(mixins.CreateModelMixin, generics.GenericAPIView):
@@ -40,4 +41,5 @@ class TransactionDetail(mixins.CreateModelMixin, generics.GenericAPIView):
 
 @api_view(['GET'])
 def exchange_rate(request) -> Response:
-    return Response(data={"exchange_rate": ""})
+    price = market.get_exchange_rate()
+    return Response(data={"exchange_rate": price})
