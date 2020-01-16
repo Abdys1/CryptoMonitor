@@ -1,7 +1,7 @@
 <template>
     <v-data-table
       :headers="headers"
-      :items="initTable"
+      :items="tableItems"
       class="elevation-1"
     ></v-data-table>
 </template>
@@ -9,7 +9,7 @@
 <script>
     export default {
         name: "TransactionTable",
-        props: ["items"],
+        props: ["items", "exchangeRate"],
         data: function () {
             return {
                 headers: [
@@ -23,7 +23,7 @@
             }
         },
         computed: {
-            initTable: function() {
+            tableItems: function() {
                 let temp = []
                 this.items.forEach(trans => {
                     const profitUSD = this.profitInUSD(trans.quantity, trans.purchase_price)
@@ -43,12 +43,10 @@
         },
         methods: {
             profitInUSD: function (quantity, purchasePrice) {
-                let actualPurchasePrice = 7312.41
-                return (quantity * actualPurchasePrice) - (quantity * purchasePrice)
+                return (quantity * this.exchangeRate) - (quantity * purchasePrice)
             },
             profitPercentage: function (quantity, profitUSD) {
-                let actualPurchasePrice = 7312.41
-                return (profitUSD / (quantity * actualPurchasePrice)) * 100
+                return (profitUSD / (quantity * this.exchangeRate)) * 100
             }
         }
     }

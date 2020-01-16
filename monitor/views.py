@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from monitor.serializers import TransactionSerializer
 from monitor.models import Transaction
 from monitor.service import market
+from monitor.exceptions import CannotGetMarketInfo
 
 
 class TransactionDetail(mixins.CreateModelMixin, generics.GenericAPIView):
@@ -41,5 +42,8 @@ class TransactionDetail(mixins.CreateModelMixin, generics.GenericAPIView):
 
 @api_view(['GET'])
 def exchange_rate(request) -> Response:
-    price = market.get_exchange_rate()
-    return Response(data={"exchange_rate": price})
+    try:
+        price = market.get_exchange_rate()
+        return Response(data={"exchange_rate": price})
+    except CannotGetMarketInfo:
+        return Response(status=status.HTTP_424_FAILED_DEPENDENCY)
