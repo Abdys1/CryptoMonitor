@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'webpack_loader',
     'rest_framework',
+    'channels',
     'rest_framework.authtoken',
     'RESTAuth.apps.AuthenticateConfig',
     'monitor.apps.MonitorConfig'
@@ -146,3 +147,5 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated', )
 }
+
+ASGI_APPLICATION = "CryptoMonitor.routing.application"

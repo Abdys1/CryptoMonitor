@@ -1,6 +1,11 @@
+import json
+from asyncio.exceptions import CancelledError, TimeoutError
+
+import pytest
+import requests
 from unittest.mock import patch
 
-import requests
+from channels.testing import WebsocketCommunicator
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.utils import timezone
@@ -9,10 +14,12 @@ from rest_framework.authtoken.models import Token
 from rest_framework.test import APITestCase
 from django.core.exceptions import ObjectDoesNotExist
 
-from monitor.serializers import TransactionSerializer
-from monitor.models import Transaction
-from monitor.service import market
-from monitor.exceptions import CannotGetMarketInfo
+from CryptoMonitor import routing
+from .serializers import TransactionSerializer
+from .models import Transaction
+from .service import market, CryptoMarket
+from .exceptions import CannotGetMarketInfo, WrongWebSocketMessage
+from channels.db import database_sync_to_async
 
 
 class TransactionMonitorTest(APITestCase):
@@ -103,8 +110,11 @@ class TransactionMonitorTest(APITestCase):
     def test_get_only_the_authorized_users_transactions(self) -> None:
         Transaction.objects.create(quantity=213, purchase_price=3213, date_of_purchase=self.actual_time,
                                    owner=self.other_user)
-        user_transactions = [Transaction.objects.create(quantity=22, purchase_price=7400, date_of_purchase=self.actual_time, owner=self.user),
-                             Transaction.objects.create(quantity=200, purchase_price=3000, date_of_purchase=self.actual_time, owner=self.user)]
+        user_transactions = [
+            Transaction.objects.create(quantity=22, purchase_price=7400, date_of_purchase=self.actual_time,
+                                       owner=self.user),
+            Transaction.objects.create(quantity=200, purchase_price=3000, date_of_purchase=self.actual_time,
+                                       owner=self.user)]
         serialized_transactions = TransactionSerializer(user_transactions, many=True)
         response = self.client.get(self.url)
         self.assertListEqual(serialized_transactions.data, response.data)
@@ -143,3 +153,85 @@ class CryptoMarketAPITest(TestCase):
         mark_response = market.get_exchange_rate()
         if abs(float(req_response.json().get("price")) - mark_response) > 5:
             self.fail("Not right exchange rate!")
+
+
+@pytest.mark.asyncio
+async def test_cannot_connect_to_ws_when_not_authorized():
+    try:
+        communicator = WebsocketCommunicator(routing.application, "/ws/exchangeRate")
+        await communicator.connect()
+        await communicator.disconnect()
+        raise AssertionError("Successful connecting without authentication")
+    except (CancelledError, TimeoutError):
+        assert True
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_can_connect_and_send_message_to_ws_when_authorized():
+    user = await database_sync_to_async(User.objects.create)(username="User6", password="1234567",
+                                                             email="example6@gmail.com")
+    token = await database_sync_to_async(Token.objects.create)(user=user)
+
+    token_str = "Authorization=Token " + str(token)
+    headers = [(b"cookie", token_str.encode())]
+    try:
+        communicator = WebsocketCommunicator(routing.application, "/ws/exchangeRate", headers=headers)
+        await communicator.connect()
+        await communicator.send_to(text_data="Hello")
+        response = await communicator.receive_from()
+        await communicator.disconnect()
+        assert response is not None
+    except (CancelledError, TimeoutError):
+        raise AssertionError("Cannot connect with token!")
+
+
+@pytest.fixture
+@pytest.mark.asyncio
+async def get_communicator(django_db_setup, django_db_blocker):
+    with django_db_blocker.unblock():
+        user, created = await database_sync_to_async(User.objects.get_or_create)(username="User5", password="1234567",
+                                                                                 email="example5@gmail.com")
+        token, created = await database_sync_to_async(Token.objects.get_or_create)(user=user)
+        token_str = "Authorization=Token " + str(token)
+        headers = [(b"cookie", token_str.encode())]
+        return WebsocketCommunicator(routing.application, "/ws/exchangeRate", headers=headers)
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db
+async def test_when_disconnect_then_cannot_send_message(get_communicator):
+    communicator = get_communicator
+    try:
+        await communicator.connect()
+        await communicator.disconnect()
+        await communicator.send_to(text_data="Hello")
+        response = await communicator.receive_from()
+        raise AssertionError("Can send message after disconnect")
+    except:
+        assert True
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db
+async def test_when_send_get_exchange_rate_then_response_actual_exchange_rate(get_communicator):
+    actual_exchange_rate = 7321.0
+    with patch.object(CryptoMarket, 'get_exchange_rate', return_value=actual_exchange_rate) as mock_exchange_rate_call:
+        communicator = get_communicator
+        await communicator.connect()
+        await communicator.send_to(text_data="get_exchange_rate")
+        response = await communicator.receive_from()
+        mock_exchange_rate_call.assert_called_once_with()
+        await communicator.disconnect()
+        assert float(response) == actual_exchange_rate
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db
+async def test_when_send_undefined_message_to_ws_then_send_wrong_message(get_communicator):
+    communicator = get_communicator
+    await communicator.connect()
+    await communicator.send_to(text_data="saqwe")
+    response = await communicator.receive_from()
+    await communicator.disconnect()
+    assert response == "wrong_msg"

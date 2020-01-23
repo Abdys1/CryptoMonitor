@@ -47,7 +47,20 @@
         },
         mounted() {
             this.getUsersTransactions()
-            this.setIntervalToExchangeRate()
+
+            document.cookie = "Authorization=Token " + localStorage.getItem("token")
+            var socket = new WebSocket("ws://" + window.location.host + "/ws/exchangeRate")
+            socket.onmessage = function (e) {
+                this.exchangeRate = parseFloat(e.data)
+                window.console.log(this.exchangeRate)
+            }
+
+            setInterval(function () {
+                if(socket.OPEN == 1) {
+                    socket.send("get_exchange_rate")
+                }
+            }, 1000)
+
         }
     }
 </script>
