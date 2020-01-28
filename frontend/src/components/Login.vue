@@ -60,11 +60,13 @@
                             this.$session.start()
                             this.$session.set('jwt', response.data.token)
                             localStorage.setItem("token", response.data.token)
+                            document.cookie = "Authorization=Token " + localStorage.getItem("token")
                             this.$router.push('/monitor')
                         }
                     }).catch(err => {
                         this.error = "Helytelen felhasználónév vagy jelszó!"
                         localStorage.removeItem("token")
+                        document.cookie = "Authorization="
                         window.console.log(err)
                     })
                 }

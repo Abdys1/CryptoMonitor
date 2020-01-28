@@ -13,7 +13,6 @@ Vue.config.productionTip = false
 Vue.use(VueRouter)
 Vue.use(VueSession)
 
-
 const base = axios.create({
   baseURL: "http://127.0.0.1:8000",
   xsrfCookieName: 'csrftoken',

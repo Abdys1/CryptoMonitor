@@ -1,6 +1,6 @@
 from django.urls import path
 
-from monitor import views
+from . import views
 
 urlpatterns = [
     path("transaction/", views.TransactionDetail.as_view()),

@@ -1,7 +1,7 @@
 <template>
     <v-app>
         <TransactionCreator @created="getUsersTransactions"></TransactionCreator>
-        <h1>{{exchangeRate}}</h1>
+        <ExchangeRateIndicator @refreshExchangeRate="refreshTable"></ExchangeRateIndicator>
         <TransactionTable
                 :items="transactions"
                 :exchangeRate="exchangeRate"></TransactionTable>
@@ -11,10 +11,11 @@
 <script>
     import TransactionCreator from "./TransactionCreator";
     import TransactionTable from "./TransactionTable";
+    import ExchangeRateIndicator from "./ExchangeRateIndicator";
 
     export default {
         name: "CryptoMonitor",
-        components: {TransactionTable, TransactionCreator},
+        components: {ExchangeRateIndicator, TransactionTable, TransactionCreator},
         data: function() {
             return {
                 transactions: [],
@@ -26,13 +27,8 @@
                 this.$http.get("/api/transaction/")
                     .then(response => this.transactions = response.data)
             },
-            setIntervalToExchangeRate: function() {
-                this.getExchangeRate()
-                setInterval(this.getExchangeRate, 1000)
-            },
-            getExchangeRate: function () {
-                this.$http.get("/api/exchangeRate")
-                    .then(response => this.exchangeRate = response.data["exchange_rate"])
+            refreshTable: function (exRate) {
+                this.exchangeRate = exRate
             }
         },
         beforeCreate() {
@@ -47,7 +43,6 @@
         },
         mounted() {
             this.getUsersTransactions()
-            this.setIntervalToExchangeRate()
         }
     }
 </script>
