@@ -4,3 +4,6 @@ pytz==2018.7
 djangorestframework==3.10.3
 mysqlclient
 requests
+channels
+pytest-django
+pytest-asyncio

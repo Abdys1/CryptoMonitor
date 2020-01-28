@@ -7,10 +7,10 @@ from rest_framework.decorators import api_view
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from monitor.serializers import TransactionSerializer
-from monitor.models import Transaction
-from monitor.service import market
-from monitor.exceptions import CannotGetMarketInfo
+from .serializers import TransactionSerializer
+from .models import Transaction
+from .service import market
+from .exceptions import CannotGetMarketInfo
 
 
 class TransactionDetail(mixins.CreateModelMixin, generics.GenericAPIView):
