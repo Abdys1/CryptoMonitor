@@ -3,7 +3,6 @@ from channels.generic.websocket import WebsocketConsumer
 from django.contrib.auth.models import AnonymousUser
 from rest_framework.authtoken.models import Token
 
-from .exceptions import WrongWebSocketMessage
 from .service import market
 
 
@@ -14,9 +13,12 @@ class CryptoMarketConsumer(WebsocketConsumer):
         user = AnonymousUser()
         for header in headers:
             if header[0] == b"cookie":
-                if b'Authorization' in header[1]:
-                    auth_name, token_str = header[1].decode().split("=")
-                    break
+                cookies = header[1].decode().split(";")
+                for cookie in cookies:
+                    if "Authorization" in cookie:
+                        auth_name, token_str = cookie.split("=")
+                        break
+                break
 
         if token_str is not None and len(token_str) > 0:
             try:

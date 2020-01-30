@@ -173,7 +173,7 @@ async def test_can_connect_and_send_message_to_ws_when_authorized():
                                                              email="example6@gmail.com")
     token = await database_sync_to_async(Token.objects.create)(user=user)
 
-    token_str = "Authorization=Token " + str(token)
+    token_str = "Authorization=Token " + str(token) + "; csrftoken=123123124asdsar"
     headers = [(b"cookie", token_str.encode())]
     try:
         communicator = WebsocketCommunicator(routing.application, "/ws/exchangeRate", headers=headers)
@@ -196,7 +196,6 @@ async def get_communicator(django_db_setup, django_db_blocker):
         token_str = "Authorization=Token " + str(token)
         headers = [(b"cookie", token_str.encode())]
         return WebsocketCommunicator(routing.application, "/ws/exchangeRate", headers=headers)
-
 
 @pytest.mark.asyncio
 @pytest.mark.django_db
