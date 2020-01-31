@@ -18,7 +18,6 @@ from CryptoMonitor import routing
 from .serializers import TransactionSerializer
 from .models import Transaction
 from .service import market, CryptoMarket
-from .exceptions import CannotGetMarketInfo, WrongWebSocketMessage
 from channels.db import database_sync_to_async
 
 
@@ -119,25 +118,28 @@ class TransactionMonitorTest(APITestCase):
         response = self.client.get(self.url)
         self.assertListEqual(serialized_transactions.data, response.data)
 
-    def test_when_get_exchange_rate_then_has_response(self) -> None:
-        response = self.client.get("/api/exchangeRate")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIsNotNone(response.data.get("exchange_rate"))
+    def test_when_not_modify_transaction_then_return_original_transaction(self):
+        trans = Transaction.objects.create(quantity=213, purchase_price=3213.0, date_of_purchase=self.actual_time,
+                                   owner=self.user)
+        serialized_trans = TransactionSerializer(trans)
+        response = self.client.put(self.url + str(trans.pk), serialized_trans.data)
+        self.assertEquals(response.data, serialized_trans.data)
 
-    @patch("monitor.service.CryptoMarket.get_exchange_rate")
-    def test_exchange_rate_get_from_market_api(self, exchange_rate_call) -> None:
-        actual_rate = 7321.0
-        exchange_rate_call.return_value = actual_rate
-        response = self.client.get("/api/exchangeRate")
-        exchange_rate_call.assert_called_once_with()
-        self.assertEqual(response.data.get("exchange_rate"), actual_rate)
+    def test_when_modify_transaction_then_return_new_transaction(self):
+        trans = Transaction.objects.create(quantity=213, purchase_price=3213.0, date_of_purchase=self.actual_time,
+                                           owner=self.user)
+        new_trans = Transaction(id="-1", quantity=2, purchase_price=9000.0, date_of_purchase=self.actual_time, owner=self.user)
+        serialized_trans = TransactionSerializer(new_trans)
+        response = self.client.put(self.url + str(trans.pk), serialized_trans.data)
+        modified_trans = Transaction(pk=trans.pk,
+                                     quantity=new_trans.quantity,
+                                     purchase_price=new_trans.purchase_price,
+                                     date_of_purchase=new_trans.date_of_purchase,
+                                     owner=trans.owner)
+        serialized_trans = TransactionSerializer(modified_trans)
+        self.assertEquals(response.data, serialized_trans.data)
 
-    @patch("monitor.service.CryptoMarket.get_exchange_rate")
-    def test_cannot_get_exchange_rate(self, exchange_rate_call) -> None:
-        exchange_rate_call.side_effect = CannotGetMarketInfo("Nem tudtam elérni a szervert!")
-        response = self.client.get("/api/exchangeRate")
-        exchange_rate_call.assert_called_once_with()
-        self.assertEqual(response.status_code, status.HTTP_424_FAILED_DEPENDENCY)
+    #TODO tesztelni, hogy ne lehessen megadni más tulajdonost
 
 
 class CryptoMarketAPITest(TestCase):
@@ -196,6 +198,7 @@ async def get_communicator(django_db_setup, django_db_blocker):
         token_str = "Authorization=Token " + str(token)
         headers = [(b"cookie", token_str.encode())]
         return WebsocketCommunicator(routing.application, "/ws/exchangeRate", headers=headers)
+
 
 @pytest.mark.asyncio
 @pytest.mark.django_db

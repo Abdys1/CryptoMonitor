@@ -7,6 +7,7 @@
           <v-text-field
             v-model="props.item.date_of_purchase"
             label="Szerkesztés"
+            @keyup.enter="updateRow(props.item)"
             single-line
             counter
           ></v-text-field>
@@ -20,6 +21,7 @@
           <v-text-field
             v-model="props.item.date_of_sell"
             label="Szerkesztés"
+            @keyup.enter="updateRow(props.item)"
             single-line
             counter
           ></v-text-field>
@@ -33,6 +35,7 @@
           <v-text-field
             v-model="props.item.quantity"
             label="Szerkesztés"
+            @keyup.enter="updateRow(props.item)"
             single-line
             counter
           ></v-text-field>
@@ -46,6 +49,7 @@
           <v-text-field
             v-model="props.item.amount"
             label="Szerkesztés"
+            @keyup.enter="updateRow(props.item)"
             single-line
             counter
           ></v-text-field>
@@ -98,12 +102,14 @@ export default {
       const profitUSD = this.profitInUSD(trans.quantity, trans.purchase_price);
       const profitPercentage = this.profitPercentage(trans.quantity, profitUSD);
       return {
-        date_of_purchase: new Date(trans.date_of_purchase).toLocaleString(),
+        id: trans.id,
+        date_of_purchase: new Date(trans.date_of_purchase).toISOString(),
         date_of_sell: trans.date_of_sell,
         quantity: trans.quantity,
         amount: trans.purchase_price.toFixed(2),
         profit_percentage: profitPercentage.toFixed(2),
-        profit_usd: profitUSD.toFixed(2)
+        profit_usd: profitUSD.toFixed(2),
+        owner: trans.owner
       };
     },
     profitInUSD: function(quantity, purchasePrice) {
@@ -112,10 +118,17 @@ export default {
     profitPercentage: function(quantity, profitUSD) {
       return (profitUSD / (quantity * this.exchangeRate)) * 100;
     },
-    save: function() {},
-    close: function() {},
-    open: function() {},
-    cancel: function() {}
+    updateRow: function(item) {
+      const newTrans = {
+        id: item.id,
+        quantity: item.quantity,
+        date_of_purchase: new Date(item.date_of_purchase),
+        purchase_price: item.amount,
+        owner: item.owner
+      };
+      this.$http.put("/api/transaction/" + item.id, newTrans)
+              .catch(response => window.console.log(response));
+    }
   },
   watch: {
     exchangeRate: function() {

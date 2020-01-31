@@ -3,20 +3,21 @@ from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import mixins, generics, status
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
-from rest_framework.decorators import api_view
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .serializers import TransactionSerializer
 from .models import Transaction
-from .service import market
-from .exceptions import CannotGetMarketInfo
 
 
-class TransactionDetail(mixins.CreateModelMixin, generics.GenericAPIView):
+class TransactionDetail(mixins.CreateModelMixin,
+                        mixins.UpdateModelMixin,
+                        generics.GenericAPIView):
+
     serializer_class = TransactionSerializer
     permission_classes = (IsAuthenticated,)
     authentication_classes = (TokenAuthentication,)
+    queryset = Transaction.objects.all()
 
     def post(self, request, *args, **kwargs) -> Response:
         try:
@@ -39,11 +40,6 @@ class TransactionDetail(mixins.CreateModelMixin, generics.GenericAPIView):
         serializer = TransactionSerializer(transactions, many=True)
         return Response(data=serializer.data)
 
-
-@api_view(['GET'])
-def exchange_rate(request) -> Response:
-    try:
-        price = market.get_exchange_rate()
-        return Response(data={"exchange_rate": price})
-    except CannotGetMarketInfo:
-        return Response(status=status.HTTP_424_FAILED_DEPENDENCY)
+    def put(self, request, *args, **kwargs):
+        print(request.data)
+        return self.update(request, *args, **kwargs)
