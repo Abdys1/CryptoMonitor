@@ -1,67 +1,68 @@
 <template>
-  <v-data-table :headers="headers" :items="transactions" class="elevation-1">
-    <template v-slot:item.date_of_purchase="props">
-      <v-edit-dialog :return-value.sync="props.item.date_of_purchase">
-        {{ props.item.date_of_purchase }}
-        <template v-slot:input>
-          <v-text-field
-            v-model="props.item.date_of_purchase"
-            label="Szerkesztés"
-            @keyup.enter="updateRow(props.item)"
-            single-line
-            counter
-          ></v-text-field>
-        </template>
-      </v-edit-dialog>
-    </template>
-    <template v-slot:item.date_of_sell="props">
-      <v-edit-dialog :return-value.sync="props.item.date_of_sell">
-        {{ props.item.date_of_sell }}
-        <template v-slot:input>
-          <v-text-field
-            v-model="props.item.date_of_sell"
-            label="Szerkesztés"
-            @keyup.enter="updateRow(props.item)"
-            single-line
-            counter
-          ></v-text-field>
-        </template>
-      </v-edit-dialog>
-    </template>
-    <template v-slot:item.quantity="props">
-      <v-edit-dialog :return-value.sync="props.item.quantity">
-        {{ props.item.quantity }}
-        <template v-slot:input>
-          <v-text-field
-            v-model="props.item.quantity"
-            label="Szerkesztés"
-            @keyup.enter="updateRow(props.item)"
-            single-line
-            counter
-          ></v-text-field>
-        </template>
-      </v-edit-dialog>
-    </template>
-    <template v-slot:item.amount="props">
-      <v-edit-dialog :return-value.sync="props.item.amount">
-        {{ props.item.amount }}
-        <template v-slot:input>
-          <v-text-field
-            v-model="props.item.amount"
-            label="Szerkesztés"
-            @keyup.enter="updateRow(props.item)"
-            single-line
-            counter
-          ></v-text-field>
-        </template>
-      </v-edit-dialog>
-    </template>
-  </v-data-table>
+  <v-col>
+    <v-data-table
+      :headers="headers"
+      :items="transactions"
+      class="second elevation-1"
+    >
+      <template v-slot:item.date_of_purchase="props">
+        <v-edit-dialog :return-value.sync="props.item.date_of_purchase">
+          {{ props.item.date_of_purchase }}
+          <template v-slot:input>
+            <v-text-field
+              v-model="props.item.date_of_purchase"
+              label="Szerkesztés"
+              @keyup.enter="updateRow(props.item)"
+              single-line
+              counter
+            ></v-text-field>
+          </template>
+        </v-edit-dialog>
+      </template>
+      <template v-slot:item.quantity="props">
+        <v-edit-dialog :return-value.sync="props.item.quantity">
+          {{ props.item.quantity }}
+          <template v-slot:input>
+            <v-text-field
+              v-model="props.item.quantity"
+              label="Szerkesztés"
+              @keyup.enter="updateRow(props.item)"
+              single-line
+              counter
+            ></v-text-field>
+          </template>
+        </v-edit-dialog>
+      </template>
+      <template v-slot:item.amount="props">
+        <v-edit-dialog :return-value.sync="props.item.amount">
+          {{ props.item.amount }}
+          <template v-slot:input>
+            <v-text-field
+              v-model="props.item.amount"
+              label="Szerkesztés"
+              @keyup.enter="updateRow(props.item)"
+              single-line
+              counter
+            ></v-text-field>
+          </template>
+        </v-edit-dialog>
+      </template>
+      <template v-slot:item.action="props">
+        <v-icon class="mr-2" small dark @click="closeTransaction(props.item)">
+          gavel
+        </v-icon>
+        <v-icon small dark @click="deleteTransaction(props.item)">
+          delete
+        </v-icon>
+      </template>
+    </v-data-table>
+  </v-col>
 </template>
 
 <script>
 export default {
   name: "TransactionTable",
+  components: {},
   props: ["exchangeRate", "newTransaction"],
   data: function() {
     return {
@@ -71,22 +72,16 @@ export default {
         { text: "Mennyiség", value: "quantity" },
         { text: "Árfolyam a vásárlás időpontjában", value: "amount" },
         { text: "Nyereség %", value: "profit_percentage" },
-        { text: "Nyereség $", value: "profit_usd" }
+        { text: "Nyereség $", value: "profit_usd" },
+        { text: "Műveletek", value: "action" }
       ],
       transactions: []
     };
   },
   methods: {
-    getUsersTransactions: function() {
-      return new Promise((resolve, reject) => {
-        this.$http
-          .get("/api/transaction/")
-          .then(response => resolve(response.data))
-          .catch(response => reject(response));
-      });
-    },
     initTransactions: function() {
-      this.getUsersTransactions()
+      this.$transAPI
+        .getUsersTransactions()
         .then(items => {
           items.forEach(trans => {
             this.addNewTransaction(trans);
@@ -95,10 +90,10 @@ export default {
         .catch(response => window.console.log(response));
     },
     addNewTransaction: function(trans) {
-      const newTrans = this.createTransaction(trans);
+      const newTrans = this.createReactiveTransaction(trans);
       this.transactions.push(newTrans);
     },
-    createTransaction: function(trans) {
+    createReactiveTransaction: function(trans) {
       const profitUSD = this.profitInUSD(trans.quantity, trans.purchase_price);
       const profitPercentage = this.profitPercentage(trans.quantity, profitUSD);
       return {
@@ -119,15 +114,52 @@ export default {
       return (profitUSD / (quantity * this.exchangeRate)) * 100;
     },
     updateRow: function(item) {
-      const newTrans = {
+      const newTrans = this.buildTransaction(item);
+      this.$transAPI
+        .updateTransaction(newTrans)
+        .catch(response => window.console.log(response));
+    },
+    closeTransaction: function(item) {
+      let options = {
+        okText: "Lezárás",
+        cancelText: "Mégse"
+      };
+
+      this.$dialog
+        .confirm("Biztosan le szeretnéd zárni ezt a tranzakciót?", options)
+        .then(() => {
+          const dateOfSell = new Date();
+          let newTrans = this.buildTransaction(item);
+          newTrans.date_of_sell = dateOfSell;
+          this.$transAPI
+            .updateTransaction(newTrans)
+            .then(() => (item.date_of_sell = dateOfSell))
+            .catch(response => window.console.log(response));
+        });
+    },
+    buildTransaction: function(item) {
+      return {
         id: item.id,
         quantity: item.quantity,
         date_of_purchase: new Date(item.date_of_purchase),
         purchase_price: item.amount,
         owner: item.owner
       };
-      this.$http.put("/api/transaction/" + item.id, newTrans)
-              .catch(response => window.console.log(response));
+    },
+    deleteTransaction: function(item) {
+      let options = {
+        okText: "Törlés",
+        cancelText: "Mégse"
+      };
+
+      this.$dialog
+        .confirm("Biztosan törölni szeretnéd a tranzakciót?", options)
+        .then(async () => {
+          this.transactions = await this.$transAPI.deleteTransaction(
+            this.transactions,
+            item.id
+          );
+        });
     }
   },
   watch: {

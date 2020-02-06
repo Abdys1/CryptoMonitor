@@ -35,15 +35,31 @@ class TransactionMonitorTest(APITestCase):
 
         self.url = "/api/transaction/"
 
+
     def test_can_create_new_transaction(self) -> None:
         response = self.client.post(self.url,
-                                    {"quantity": self.quantity, "purchase_price": self.price,
-                                     "date_of_purchase": self.actual_time, "owner": self.user.pk},
+                                    {"quantity": self.quantity,
+                                     "purchase_price": self.price,
+                                     "date_of_purchase": self.actual_time,
+                                     "owner": self.user.pk},
                                     format="json")
         trans_id = response.data.get("id")
         transaction = Transaction.objects.get(pk=trans_id)
         serialized_trans = TransactionSerializer(transaction)
         self.assertEqual(serialized_trans.data, response.data)
+
+    def test_can_create_new_transaction_with_float_quantity(self):
+        response = self.client.post(self.url,
+                                    {"quantity": 23.22,
+                                     "purchase_price": self.price,
+                                     "date_of_purchase": self.actual_time,
+                                     "owner": self.user.pk},
+                                    format="json")
+        trans_id = response.data.get("id")
+        transaction = Transaction.objects.get(pk=trans_id)
+        serialized_trans = TransactionSerializer(transaction)
+        self.assertEquals(serialized_trans.data.get("quantity"), response.data.get("quantity"))
+        self.assertTrue(isinstance(response.data.get("quantity"), float))
 
     def test_user_cannot_create_transaction_with_other_owner(self) -> None:
         response = self.client.post(self.url,
@@ -120,15 +136,15 @@ class TransactionMonitorTest(APITestCase):
 
     def test_when_not_modify_transaction_then_return_original_transaction(self):
         trans = Transaction.objects.create(quantity=213, purchase_price=3213.0, date_of_purchase=self.actual_time,
-                                   owner=self.user)
+                                           owner=self.user)
         serialized_trans = TransactionSerializer(trans)
         response = self.client.put(self.url + str(trans.pk), serialized_trans.data)
-        self.assertEquals(response.data, serialized_trans.data)
+        self.assertDictEqual(response.data, serialized_trans.data)
 
     def test_when_modify_transaction_then_return_new_transaction(self):
-        trans = Transaction.objects.create(quantity=213, purchase_price=3213.0, date_of_purchase=self.actual_time,
+        trans = Transaction.objects.create(quantity=213.22, purchase_price=3213.0, date_of_purchase=self.actual_time,
                                            owner=self.user)
-        new_trans = Transaction(id="-1", quantity=2, purchase_price=9000.0, date_of_purchase=self.actual_time, owner=self.user)
+        new_trans = Transaction(id=-1, quantity=2, purchase_price=9000.0, date_of_purchase=self.actual_time, owner=self.user)
         serialized_trans = TransactionSerializer(new_trans)
         response = self.client.put(self.url + str(trans.pk), serialized_trans.data)
         modified_trans = Transaction(pk=trans.pk,
@@ -137,10 +153,60 @@ class TransactionMonitorTest(APITestCase):
                                      date_of_purchase=new_trans.date_of_purchase,
                                      owner=trans.owner)
         serialized_trans = TransactionSerializer(modified_trans)
-        self.assertEquals(response.data, serialized_trans.data)
+        self.assertDictEqual(response.data, serialized_trans.data)
 
-    #TODO tesztelni, hogy ne lehessen megadni más tulajdonost
+    def test_cannot_set_other_user_when_modify_transaction(self):
+        trans = Transaction.objects.create(quantity=213, purchase_price=3213.0, date_of_purchase=self.actual_time,
+                                           owner=self.user)
+        new_trans = Transaction(id=-1, quantity=2, purchase_price=9000.0, date_of_purchase=self.actual_time, owner=self.other_user)
+        serialized_trans = TransactionSerializer(new_trans)
+        response = self.client.put(self.url + str(trans.pk), serialized_trans.data)
+        self.assertEquals(response.status_code, status.HTTP_403_FORBIDDEN)
 
+    def test_can_close_the_transaction(self):
+        trans = Transaction.objects.create(quantity=self.quantity,
+                                           purchase_price=self.price,
+                                           date_of_purchase=self.actual_time,
+                                           owner=self.user)
+        new_trans = Transaction(id=trans.pk,
+                                quantity=self.quantity,
+                                purchase_price=self.price,
+                                date_of_purchase=self.actual_time,
+                                date_of_sell=timezone.now(),
+                                owner=self.user)
+        serializer = TransactionSerializer(new_trans)
+        response = self.client.put(self.url + str(trans.pk), serializer.data)
+        self.assertDictEqual(response.data, serializer.data)
+        self.assertIsNotNone(response.data.get("date_of_sell"))
+
+    def test_can_delete_transaction(self):
+        trans = Transaction.objects.create(quantity=self.quantity,
+                                           purchase_price=self.price,
+                                           date_of_purchase=self.actual_time,
+                                           owner=self.user)
+        response = self.client.delete(self.url + str(trans.pk))
+        try:
+            Transaction.objects.get(pk=trans.pk)
+            self.fail("Transaction is still alive!")
+        except ObjectDoesNotExist:
+            self.assertEquals(response.status_code, status.HTTP_200_OK)
+
+    def test_cannot_delete_when_the_trans_not_exist(self):
+        trans = Transaction.objects.create(quantity=self.quantity,
+                                           purchase_price=self.price,
+                                           date_of_purchase=self.actual_time,
+                                           owner=self.user)
+        self.client.delete(self.url + str(trans.pk))
+        response = self.client.delete(self.url + str(trans.pk))
+        self.assertEquals(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_cannot_delete_other_users_trans(self):
+        trans = Transaction.objects.create(quantity=self.quantity,
+                                           purchase_price=self.price,
+                                           date_of_purchase=self.actual_time,
+                                           owner=self.other_user)
+        response = self.client.delete(self.url + str(trans.pk))
+        self.assertEquals(response.status_code, status.HTTP_403_FORBIDDEN)
 
 class CryptoMarketAPITest(TestCase):
     def test_has_response_when_get_exchange_rate(self) -> None:

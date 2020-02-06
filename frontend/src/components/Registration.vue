@@ -65,7 +65,7 @@
 </template>
 
 <script>
-import InfoModal from "./InfoModal";
+import InfoModal from "./modals/InfoModal";
 
 export default {
   name: "Registration",

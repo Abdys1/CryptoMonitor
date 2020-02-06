@@ -1,6 +1,8 @@
 import Vue from "vue";
 import VueRouter from "vue-router";
 import VueSession from "vue-session";
+import VuejsDialog from "vuejs-dialog"
+import 'vuejs-dialog/dist/vuejs-dialog.min.css';
 import App from "./App.vue";
 import vuetify from "./plugins/vuetify";
 import axios from "axios";
@@ -9,6 +11,7 @@ import Login from "./components/Login";
 import Registration from "./components/Registration";
 import CryptoMonitor from "./components/CryptoMonitor";
 import VueNativeSock from "vue-native-websocket";
+import TransactionController from "./components/util/TransactionAPI";
 
 Vue.config.productionTip = false;
 Vue.use(VueRouter);
@@ -16,6 +19,7 @@ Vue.use(VueSession);
 Vue.use(VueNativeSock, "ws://" + window.location.host + "/ws/exchangeRate", {
   connectManually: true
 });
+Vue.use(VuejsDialog);
 
 const base = axios.create({
   baseURL: "http://127.0.0.1:8000",
@@ -24,7 +28,8 @@ const base = axios.create({
 });
 
 Vue.prototype.$http = base;
-Vue.prototype.$socket = VueNativeSock.socket
+Vue.prototype.$socket = VueNativeSock.socket;
+Vue.prototype.$transAPI = new TransactionController(Vue.prototype.$http);
 
 const routes = [
   {

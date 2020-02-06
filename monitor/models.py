@@ -3,13 +3,13 @@ from django.db import models
 
 
 class Transaction(models.Model):
-    quantity = models.IntegerField(null=False, default=0)
+    quantity = models.FloatField(null=False, default=0)
     purchase_price = models.FloatField(null=False, default=0)
     date_of_purchase = models.DateTimeField(null=False, default=None)
-    date_of_sell = models.DateTimeField(null=True, default=None)
+    date_of_sell = models.DateTimeField(null=True)
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "(quantity=" + str(self.quantity) + \
                ", purchase_price=" + str(self.purchase_price) + \
                ", date_of_purchase=" + str(self.date_of_purchase) + \

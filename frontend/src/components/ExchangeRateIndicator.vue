@@ -1,5 +1,12 @@
 <template>
-  <h1>{{ exchangeRate }}</h1>
+  <v-card color="second">
+    <v-card-title>Aktuális árfolyam</v-card-title>
+    <v-card-text>
+      <div>
+        <h1>{{ exchangeRate }}</h1>
+      </div>
+    </v-card-text>
+  </v-card>
 </template>
 
 <script>

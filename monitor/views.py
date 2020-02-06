@@ -21,13 +21,7 @@ class TransactionDetail(mixins.CreateModelMixin,
 
     def post(self, request, *args, **kwargs) -> Response:
         try:
-            user = request.user
-            user_token = Token.objects.get(user=user)
-            owner_id = request.data.get("owner")
-            owner = User.objects.get(pk=owner_id)
-            owner_token = Token.objects.get(user=owner)
-
-            if user_token == owner_token:
+            if self.is_valid_owner(request):
                 return self.create(request, *args, **kwargs)
             else:
                 return Response(status=status.HTTP_403_FORBIDDEN)
@@ -40,6 +34,31 @@ class TransactionDetail(mixins.CreateModelMixin,
         serializer = TransactionSerializer(transactions, many=True)
         return Response(data=serializer.data)
 
-    def put(self, request, *args, **kwargs):
-        print(request.data)
-        return self.update(request, *args, **kwargs)
+    def put(self, request, *args, **kwargs) -> Response:
+        try:
+            if self.is_valid_owner(request):
+                return self.update(request, *args, **kwargs)
+            else:
+                return Response(status=status.HTTP_403_FORBIDDEN)
+        except ObjectDoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+    def delete(self, request, pk) -> Response:
+        try:
+            trans = Transaction.objects.get(pk=pk)
+            if trans.owner.pk == request.user.pk:
+                trans.delete()
+                return Response(status=status.HTTP_200_OK)
+            else:
+                return Response(status=status.HTTP_403_FORBIDDEN)
+        except ObjectDoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+    def is_valid_owner(self, request) -> bool:
+        user = request.user
+        user_token = Token.objects.get(user=user)
+        owner_id = request.data.get("owner")
+        owner = User.objects.get(pk=owner_id)
+        owner_token = Token.objects.get(user=owner)
+
+        return user_token == owner_token
