@@ -6,8 +6,9 @@ class Transaction(models.Model):
     quantity = models.FloatField(null=False, default=0)
     purchase_price = models.FloatField(null=False, default=0)
     date_of_purchase = models.DateTimeField(null=False, default=None)
-    date_of_sell = models.DateTimeField(null=True)
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
+    date_of_sell = models.DateTimeField(null=True)
+    sell_price = models.FloatField(null=True)
 
     def __str__(self) -> str:
         return "(quantity=" + str(self.quantity) + \

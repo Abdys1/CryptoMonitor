@@ -53,23 +53,15 @@
             </v-btn>
           </v-layout>
         </v-layout>
-        <InfoModal
-          title="Sikeres regisztráció"
-          message="Most már bejelentkezhet!"
-          v-model="dialog"
-          @verify-message="redirectLoginPage"
-        ></InfoModal>
       </v-col>
     </v-row>
   </v-container>
 </template>
 
 <script>
-import InfoModal from "./modals/InfoModal";
-
 export default {
   name: "Registration",
-  components: { InfoModal },
+  components: {},
   data: function() {
     return {
       valid: false,
@@ -115,7 +107,12 @@ export default {
               this.getFirstError(errors);
             } else if (response.status === 201) {
               this.$refs.form.reset();
-              this.dialog = true;
+              this.$dialog
+                .alert("Most már bejelentkezhet!", {
+                  okText: "Rendben",
+                  title: "Sikeres bejelentkezés"
+                })
+                .then(() => this.redirectLoginPage());
             }
           });
       }
@@ -124,8 +121,7 @@ export default {
       if (errors.hasOwnProperty("username")) this.error = errors.username[0];
       else if (errors.hasOwnProperty("email")) this.error = errors.email[0];
     },
-    redirectLoginPage: function(event, value) {
-      window.console.log(value);
+    redirectLoginPage: function() {
       this.$router.push("/login");
     }
   }

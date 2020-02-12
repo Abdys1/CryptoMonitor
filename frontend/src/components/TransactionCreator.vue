@@ -68,23 +68,15 @@
           </v-menu>
         </v-form>
         <v-btn @click="createNewTransaction">Mentés</v-btn>
-        <InfoModal
-          title="Új tranzakció"
-          message="Sikeresen felvetted az új tranzakciót!"
-          v-model="dialog"
-          @verify-message="closeDialog"
-        ></InfoModal>
       </div>
     </v-card-text>
   </v-card>
 </template>
 
 <script>
-import InfoModal from "./modals/InfoModal";
-
 export default {
   name: "TransactionCreator",
-  components: { InfoModal },
+  components: { },
   data: function() {
     return {
       amount: null,
@@ -119,14 +111,11 @@ export default {
       this.$transAPI
         .saveTransaction(newTrans)
         .then(createdTrans => {
-          this.dialog = true;
+          this.$dialog.alert("Sikeresen létrehoztad a tranzakciót!", {okText: "Rendben"});
+          this.$refs.form.reset();
           this.$emit("created", createdTrans);
         })
         .catch(err => window.console.log(err));
-    },
-    closeDialog: function() {
-      this.dialog = false;
-      this.$refs.form.reset();
     }
   },
   beforeCreate() {

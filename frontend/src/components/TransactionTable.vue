@@ -10,6 +10,9 @@
           {{ props.item.date_of_purchase }}
           <template v-slot:input>
             <v-text-field
+              v-if="
+                props.item.date_of_sell == null || props.item.date_of_sell == ''
+              "
               v-model="props.item.date_of_purchase"
               label="Szerkesztés"
               @keyup.enter="updateRow(props.item)"
@@ -24,6 +27,9 @@
           {{ props.item.quantity }}
           <template v-slot:input>
             <v-text-field
+              v-if="
+                props.item.date_of_sell == null || props.item.date_of_sell == ''
+              "
               v-model="props.item.quantity"
               label="Szerkesztés"
               @keyup.enter="updateRow(props.item)"
@@ -33,12 +39,15 @@
           </template>
         </v-edit-dialog>
       </template>
-      <template v-slot:item.amount="props">
+      <template v-slot:item.purchase_price="props">
         <v-edit-dialog :return-value.sync="props.item.amount">
-          {{ props.item.amount }}
+          {{ props.item.purchase_price }}
           <template v-slot:input>
             <v-text-field
-              v-model="props.item.amount"
+              v-if="
+                props.item.date_of_sell == null || props.item.date_of_sell == ''
+              "
+              v-model="props.item.purchase_price"
               label="Szerkesztés"
               @keyup.enter="updateRow(props.item)"
               single-line
@@ -70,7 +79,7 @@ export default {
         { text: "Vásárlás dátuma", value: "date_of_purchase" },
         { text: "Eladás dátuma", value: "date_of_sell" },
         { text: "Mennyiség", value: "quantity" },
-        { text: "Árfolyam a vásárlás időpontjában", value: "amount" },
+        { text: "Árfolyam a vásárlás időpontjában", value: "purchase_price" },
         { text: "Nyereség %", value: "profit_percentage" },
         { text: "Nyereség $", value: "profit_usd" },
         { text: "Műveletek", value: "action" }
@@ -90,28 +99,36 @@ export default {
         .catch(response => window.console.log(response));
     },
     addNewTransaction: function(trans) {
-      const newTrans = this.createReactiveTransaction(trans);
+      let newTrans = this.createTransaction(trans);
       this.transactions.push(newTrans);
     },
-    createReactiveTransaction: function(trans) {
-      const profitUSD = this.profitInUSD(trans.quantity, trans.purchase_price);
-      const profitPercentage = this.profitPercentage(trans.quantity, profitUSD);
+    createTransaction: function(trans) {
+      const profit = this.isClosedTransaction(trans) ? this.calcProfit(trans, trans.sell_price) : this.calcProfit(trans, this.exchangeRate);
       return {
         id: trans.id,
         date_of_purchase: new Date(trans.date_of_purchase).toISOString(),
         date_of_sell: trans.date_of_sell,
         quantity: trans.quantity,
-        amount: trans.purchase_price.toFixed(2),
-        profit_percentage: profitPercentage.toFixed(2),
-        profit_usd: profitUSD.toFixed(2),
+        purchase_price: trans.purchase_price.toFixed(2),
+        profit_percentage: profit.margin.toFixed(2),
+        profit_usd: profit.profitInUSD.toFixed(2),
         owner: trans.owner
       };
     },
-    profitInUSD: function(quantity, purchasePrice) {
-      return quantity * this.exchangeRate - quantity * purchasePrice;
+    isClosedTransaction: function(trans) {
+      return typeof trans.date_of_sell !== "undefined" && typeof trans.sell_price !== "undefined";
     },
-    profitPercentage: function(quantity, profitUSD) {
-      return (profitUSD / (quantity * this.exchangeRate)) * 100;
+    calcProfit: function(trans, exchangeRate) {
+        const floatQuantity = parseFloat(trans.quantity);
+        const floatPurchasePrice = parseFloat(trans.purchase_price);
+        const floatExchangeRate = parseFloat(exchangeRate);
+
+        const profitInUSD = floatQuantity * floatExchangeRate - floatQuantity * floatPurchasePrice;
+        const margin = (profitInUSD / (floatQuantity * floatExchangeRate)) * 100;
+        return {
+            profitInUSD: profitInUSD,
+            margin: margin
+        }
     },
     updateRow: function(item) {
       const newTrans = this.buildTransaction(item);
@@ -131,6 +148,7 @@ export default {
           const dateOfSell = new Date();
           let newTrans = this.buildTransaction(item);
           newTrans.date_of_sell = dateOfSell;
+          newTrans.sell_price = this.exchangeRate;
           this.$transAPI
             .updateTransaction(newTrans)
             .then(() => (item.date_of_sell = dateOfSell))
@@ -142,7 +160,7 @@ export default {
         id: item.id,
         quantity: item.quantity,
         date_of_purchase: new Date(item.date_of_purchase),
-        purchase_price: item.amount,
+        purchase_price: item.purchase_price,
         owner: item.owner
       };
     },
@@ -163,15 +181,13 @@ export default {
     }
   },
   watch: {
-    exchangeRate: function() {
+    exchangeRate: function(newExRate) {
       this.transactions.forEach(trans => {
-        const profitUSD = this.profitInUSD(trans.quantity, trans.amount);
-        const profitPercentage = this.profitPercentage(
-          trans.quantity,
-          profitUSD
-        );
-        trans.profit_usd = profitUSD.toFixed(2);
-        trans.profit_percentage = profitPercentage.toFixed(2);
+        if (trans.date_of_sell === undefined) {
+          let profit = this.calcProfit(trans, newExRate);
+          trans.profit_usd = profit.profitInUSD.toFixed(2);
+          trans.profit_percentage = profit.margin.toFixed(2);
+        }
       });
     },
     newTransaction: function(trans) {

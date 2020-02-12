@@ -163,21 +163,36 @@ class TransactionMonitorTest(APITestCase):
         response = self.client.put(self.url + str(trans.pk), serialized_trans.data)
         self.assertEquals(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_can_close_the_transaction(self):
+    # def test_can_close_transaction(self):
+    #     trans = Transaction.objects.create(quantity=self.quantity,
+    #                                        purchase_price=self.price,
+    #                                        date_of_purchase=self.actual_time,
+    #                                        owner=self.user)
+    #     response = self.client.put(self.url + str(trans.pk), {"sell_price": 9402})
+    #     self.assertEquals(response.status_code, status.HTTP_200_OK)
+
+    def test_when_close_transaction_then_profit_and_date_of_sell_in_response(self):
         trans = Transaction.objects.create(quantity=self.quantity,
                                            purchase_price=self.price,
                                            date_of_purchase=self.actual_time,
                                            owner=self.user)
-        new_trans = Transaction(id=trans.pk,
-                                quantity=self.quantity,
-                                purchase_price=self.price,
-                                date_of_purchase=self.actual_time,
+
+        new_trans = Transaction(quantity=trans.quantity,
+                                purchase_price=trans.purchase_price,
+                                date_of_purchase=trans.date_of_purchase,
+                                owner=trans.owner,
                                 date_of_sell=timezone.now(),
-                                owner=self.user)
+                                sell_price=9402)
+
         serializer = TransactionSerializer(new_trans)
         response = self.client.put(self.url + str(trans.pk), serializer.data)
-        self.assertDictEqual(response.data, serializer.data)
+        closed_trans = Transaction.objects.get(pk=trans.pk)
+        serializer = TransactionSerializer(closed_trans)
         self.assertIsNotNone(response.data.get("date_of_sell"))
+        self.assertIsNotNone(response.data.get("sell_price"))
+        self.assertDictEqual(response.data, serializer.data)
+
+    #TODO Ha nem adom meg egyszerre mindkettőt, akkor dobjon hibát
 
     def test_can_delete_transaction(self):
         trans = Transaction.objects.create(quantity=self.quantity,
@@ -207,6 +222,7 @@ class TransactionMonitorTest(APITestCase):
                                            owner=self.other_user)
         response = self.client.delete(self.url + str(trans.pk))
         self.assertEquals(response.status_code, status.HTTP_403_FORBIDDEN)
+
 
 class CryptoMarketAPITest(TestCase):
     def test_has_response_when_get_exchange_rate(self) -> None:
