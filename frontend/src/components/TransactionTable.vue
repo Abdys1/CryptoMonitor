@@ -57,21 +57,37 @@
         </v-edit-dialog>
       </template>
       <template v-slot:item.action="props">
-        <v-icon class="mr-2" small dark @click="closeTransaction(props.item)">
+        <v-icon class="mr-2" small dark @click="openCloseDialog(props.item)">
           gavel
         </v-icon>
-        <v-icon small dark @click="deleteTransaction(props.item)">
+        <v-icon small dark @click="openDeleteDialog(props.item)">
           delete
         </v-icon>
       </template>
     </v-data-table>
+    <DeleteDialog
+      v-model="deleteDialog"
+      :item="actualItem"
+      @cancel="deleteDialog = false"
+      @confirm="deleteTransaction"
+    ></DeleteDialog>
+    <CloseDialog
+      v-model="closeDialog"
+      :item="actualItem"
+      @cancel="closeDialog = false"
+      @confirm="closeTransaction"
+    >
+    </CloseDialog>
   </v-col>
 </template>
 
 <script>
+import DeleteDialog from "./DeleteDialog";
+import CloseDialog from "./CloseDialog";
+
 export default {
   name: "TransactionTable",
-  components: {},
+  components: { CloseDialog, DeleteDialog },
   props: ["exchangeRate", "newTransaction"],
   data: function() {
     return {
@@ -84,6 +100,9 @@ export default {
         { text: "Nyereség $", value: "profit_usd" },
         { text: "Műveletek", value: "action" }
       ],
+      deleteDialog: false,
+      closeDialog: false,
+      actualItem: null,
       transactions: []
     };
   },
@@ -103,7 +122,9 @@ export default {
       this.transactions.push(newTrans);
     },
     createTransaction: function(trans) {
-      const profit = this.isClosedTransaction(trans) ? this.calcProfit(trans, trans.sell_price) : this.calcProfit(trans, this.exchangeRate);
+      const profit = this.isClosedTransaction(trans)
+        ? this.calcProfit(trans, trans.sell_price)
+        : this.calcProfit(trans, this.exchangeRate);
       return {
         id: trans.id,
         date_of_purchase: new Date(trans.date_of_purchase).toISOString(),
@@ -116,19 +137,23 @@ export default {
       };
     },
     isClosedTransaction: function(trans) {
-      return typeof trans.date_of_sell !== "undefined" && typeof trans.sell_price !== "undefined";
+      return (
+        typeof trans.date_of_sell !== "undefined" &&
+        typeof trans.sell_price !== "undefined"
+      );
     },
     calcProfit: function(trans, exchangeRate) {
-        const floatQuantity = parseFloat(trans.quantity);
-        const floatPurchasePrice = parseFloat(trans.purchase_price);
-        const floatExchangeRate = parseFloat(exchangeRate);
+      const floatQuantity = parseFloat(trans.quantity);
+      const floatPurchasePrice = parseFloat(trans.purchase_price);
+      const floatExchangeRate = parseFloat(exchangeRate);
 
-        const profitInUSD = floatQuantity * floatExchangeRate - floatQuantity * floatPurchasePrice;
-        const margin = (profitInUSD / (floatQuantity * floatExchangeRate)) * 100;
-        return {
-            profitInUSD: profitInUSD,
-            margin: margin
-        }
+      const profitInUSD =
+        floatQuantity * floatExchangeRate - floatQuantity * floatPurchasePrice;
+      const margin = (profitInUSD / (floatQuantity * floatExchangeRate)) * 100;
+      return {
+        profitInUSD: profitInUSD,
+        margin: margin
+      };
     },
     updateRow: function(item) {
       const newTrans = this.buildTransaction(item);
@@ -136,24 +161,21 @@ export default {
         .updateTransaction(newTrans)
         .catch(response => window.console.log(response));
     },
-    closeTransaction: function(item) {
-      let options = {
-        okText: "Lezárás",
-        cancelText: "Mégse"
-      };
-
-      this.$dialog
-        .confirm("Biztosan le szeretnéd zárni ezt a tranzakciót?", options)
+    openCloseDialog: function(item) {
+      this.actualItem = item;
+      this.closeDialog = true;
+    },
+    closeTransaction: function(dateOfSell, sellPrice) {
+      let newTrans = this.buildTransaction(this.actualItem);
+      newTrans.date_of_sell = dateOfSell;
+      newTrans.sell_price = sellPrice;
+      this.$transAPI
+        .updateTransaction(newTrans)
         .then(() => {
-          const dateOfSell = new Date();
-          let newTrans = this.buildTransaction(item);
-          newTrans.date_of_sell = dateOfSell;
-          newTrans.sell_price = this.exchangeRate;
-          this.$transAPI
-            .updateTransaction(newTrans)
-            .then(() => (item.date_of_sell = dateOfSell))
-            .catch(response => window.console.log(response));
-        });
+          this.actualItem.date_of_sell = dateOfSell;
+          this.closeDialog = false;
+        })
+        .catch(response => window.console.log(response));
     },
     buildTransaction: function(item) {
       return {
@@ -164,20 +186,16 @@ export default {
         owner: item.owner
       };
     },
-    deleteTransaction: function(item) {
-      let options = {
-        okText: "Törlés",
-        cancelText: "Mégse"
-      };
-
-      this.$dialog
-        .confirm("Biztosan törölni szeretnéd a tranzakciót?", options)
-        .then(async () => {
-          this.transactions = await this.$transAPI.deleteTransaction(
-            this.transactions,
-            item.id
-          );
-        });
+    openDeleteDialog: function(item) {
+      this.actualItem = item;
+      this.deleteDialog = true;
+    },
+    deleteTransaction: async function() {
+      this.transactions = await this.$transAPI.deleteTransaction(
+        this.transactions,
+        this.actualItem.id
+      );
+      this.deleteDialog = false;
     }
   },
   watch: {

@@ -1,82 +1,94 @@
 <template>
-  <v-card color="second">
-    <v-card-title>Új tranzakció felvétele</v-card-title>
-    <v-card-text>
-      <div>
-        <v-form ref="form">
-          <v-text-field
-            label="Árfolyam"
-            prefix="$"
-            type="number"
-            v-model="amount"
-            :rules="validateRules"
-          ></v-text-field>
-          <v-text-field
-            label="Mennyiség"
-            v-model="quantity"
-            type="number"
-            :rules="validateRules"
-          >
-          </v-text-field>
-          <v-menu
-            v-model="menu"
-            :close-on-content-click="false"
-            :nudge-right="40"
-            transition="scale-transition"
-            offset-y
-            min-width="290px"
-          >
-            <template v-slot:activator="{ on }">
-              <v-text-field
+  <div>
+    <v-card color="second">
+      <v-card-title>Új tranzakció felvétele</v-card-title>
+      <v-card-text>
+        <div>
+          <v-form ref="form">
+            <v-text-field
+              label="Árfolyam"
+              prefix="$"
+              type="number"
+              v-model="amount"
+              :rules="validateRules"
+            ></v-text-field>
+            <v-text-field
+              label="Mennyiség"
+              v-model="quantity"
+              type="number"
+              :rules="validateRules"
+            >
+            </v-text-field>
+            <v-menu
+              v-model="menu"
+              :close-on-content-click="false"
+              :nudge-right="40"
+              transition="scale-transition"
+              offset-y
+              min-width="290px"
+            >
+              <template v-slot:activator="{ on }">
+                <v-text-field
+                  v-model="date"
+                  label="Vásárlás dátuma"
+                  prepend-icon="event"
+                  readonly
+                  v-on="on"
+                  :rules="validateRules"
+                ></v-text-field>
+              </template>
+              <v-date-picker
                 v-model="date"
-                label="Vásárlás dátuma"
-                prepend-icon="event"
-                readonly
-                v-on="on"
-                :rules="validateRules"
-              ></v-text-field>
-            </template>
-            <v-date-picker v-model="date" @input="menu = false"></v-date-picker>
-          </v-menu>
-          <v-menu
-            ref="menu"
-            v-model="menu2"
-            :close-on-content-click="false"
-            :nudge-right="40"
-            :return-value.sync="time"
-            transition="scale-transition"
-            offset-y
-            max-width="290px"
-            min-width="290px"
-          >
-            <template v-slot:activator="{ on }">
-              <v-text-field
+                @input="menu = false"
+              ></v-date-picker>
+            </v-menu>
+            <v-menu
+              ref="menu"
+              v-model="menu2"
+              :close-on-content-click="false"
+              :nudge-right="40"
+              :return-value.sync="time"
+              transition="scale-transition"
+              offset-y
+              max-width="290px"
+              min-width="290px"
+            >
+              <template v-slot:activator="{ on }">
+                <v-text-field
+                  v-model="time"
+                  label="Vásárlás ideje"
+                  prepend-icon="access_time"
+                  readonly
+                  v-on="on"
+                  :rules="validateRules"
+                ></v-text-field>
+              </template>
+              <v-time-picker
+                v-if="menu2"
                 v-model="time"
-                label="Vásárlás ideje"
-                prepend-icon="access_time"
-                readonly
-                v-on="on"
-                :rules="validateRules"
-              ></v-text-field>
-            </template>
-            <v-time-picker
-              v-if="menu2"
-              v-model="time"
-              full-width
-              @click:minute="$refs.menu.save(time)"
-            ></v-time-picker>
-          </v-menu>
-        </v-form>
-        <v-btn @click="createNewTransaction">Mentés</v-btn>
-      </div>
-    </v-card-text>
-  </v-card>
+                full-width
+                @click:minute="$refs.menu.save(time)"
+              ></v-time-picker>
+            </v-menu>
+          </v-form>
+          <v-btn @click="createNewTransaction">Mentés</v-btn>
+        </div>
+      </v-card-text>
+    </v-card>
+    <InfoModal
+      title="Új tranzakció"
+      message="Sikeresen felvetted az új tranzakciót!"
+      v-model="dialog"
+      @verify-message="dialog = false"
+    ></InfoModal>
+  </div>
 </template>
 
 <script>
+import InfoModal from "./InfoModal";
 export default {
   name: "TransactionCreator",
-  components: { },
+  components: { InfoModal },
   data: function() {
     return {
       amount: null,
@@ -111,8 +123,8 @@ export default {
       this.$transAPI
         .saveTransaction(newTrans)
         .then(createdTrans => {
-          this.$dialog.alert("Sikeresen létrehoztad a tranzakciót!", {okText: "Rendben"});
           this.$refs.form.reset();
+          this.dialog = true;
           this.$emit("created", createdTrans);
         })
         .catch(err => window.console.log(err));
