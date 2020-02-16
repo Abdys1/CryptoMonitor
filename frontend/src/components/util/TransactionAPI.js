@@ -1,14 +1,14 @@
 class TransactionController {
   constructor(http) {
     this.http = http;
-    this.url = "/api/transaction/";
+    this.url = "/api/transaction";
   }
 
-  getUsersTransactions() {
+  getUsersTransactions(pageNumber) {
     return new Promise((resolve, reject) => {
       this.http
-        .get(this.url)
-        .then(response => resolve(response.data))
+        .get(this.url + `?page_num=${pageNumber}`)
+        .then(response => resolve(response.data.hasOwnProperty("transactions") ? response.data["transactions"] : []))
         .catch(response => reject(response));
     });
   }
@@ -35,7 +35,7 @@ class TransactionController {
   saveTransaction(newTrans) {
     return new Promise((resolve, reject) => {
       this.http
-        .post("/api/transaction/", newTrans)
+        .post(this.url, newTrans)
         .then(response => resolve(response.data))
         .catch(response => reject(response));
     });

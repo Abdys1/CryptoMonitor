@@ -3,6 +3,8 @@
     <v-data-table
       :headers="headers"
       :items="transactions"
+      :items-per-page="numberOfItems"
+      hide-default-footer
       class="second elevation-1"
     >
       <template v-slot:no-data>
@@ -134,6 +136,7 @@ export default {
       closeDialog: false,
       actualItem: null,
       componentKey: 0,
+      numberOfItems: 2,
       prevPurchaseDate: null,
       transactions: []
     };
@@ -141,7 +144,7 @@ export default {
   methods: {
     initTransactions: function() {
       this.$transAPI
-        .getUsersTransactions()
+        .getUsersTransactions(1)
         .then(transactions => {
           transactions.forEach(trans => {
             this.addNewTransaction(trans);
@@ -227,7 +230,10 @@ export default {
       };
     },
     closeActualItem: function(dateOfSell, sellPrice) {
-      const profit = this.calcProfit(this.actualItem, this.actualItem.sell_price);
+      const profit = this.calcProfit(
+        this.actualItem,
+        this.actualItem.sell_price
+      );
 
       this.actualItem.date_of_sell = formatter.getPrettyDate(dateOfSell);
       this.actualItem.sell_price = sellPrice.toFixed(2);
@@ -252,7 +258,9 @@ export default {
       this.prevPurchaseDate = item.date_of_purchase;
     },
     restorePrevPurchaseDate: function(item) {
-      item.date_of_purchase = formatter.getPrettyDate(new Date(this.prevPurchaseDate));
+      item.date_of_purchase = formatter.getPrettyDate(
+        new Date(this.prevPurchaseDate)
+      );
     }
   },
   watch: {
@@ -266,7 +274,9 @@ export default {
       });
     },
     newTransaction: function(trans) {
-      this.addNewTransaction(trans);
+      if (this.numberOfItems > this.transactions.length) {
+        this.addNewTransaction(trans);
+      }
     },
     closeDialog: function() {
       if (this.closeDialog === true) {

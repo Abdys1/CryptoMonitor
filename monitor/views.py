@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.paginator import Paginator
 from rest_framework import mixins, generics, status
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
@@ -31,8 +32,17 @@ class TransactionDetail(mixins.CreateModelMixin,
     def get(self, request) -> Response:
         user = request.user
         transactions = Transaction.objects.filter(owner=user)
-        serializer = TransactionSerializer(transactions, many=True)
-        return Response(data=serializer.data)
+        if "page_num" in request.GET:
+            page_number = int(request.GET["page_num"])
+            paginator = Paginator(list(transactions), 2)
+            page = paginator.page(page_number)
+            has_next = page.has_next()
+            has_prev = page.has_previous()
+            serializer = TransactionSerializer(page.object_list, many=True)
+            return Response(data={"hasNext": has_next, "hasPrev": has_prev, "transactions": serializer.data})
+        else:
+            serializer = TransactionSerializer(transactions, many=True)
+            return Response(data=serializer.data)
 
     def put(self, request, *args, **kwargs) -> Response:
         try:
