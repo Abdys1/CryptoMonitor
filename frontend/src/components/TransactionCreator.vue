@@ -19,57 +19,12 @@
               :rules="validateRules"
             >
             </v-text-field>
-            <v-menu
-              v-model="menu"
-              :close-on-content-click="false"
-              :nudge-right="40"
-              transition="scale-transition"
-              offset-y
-              min-width="290px"
+            <v-datetime-picker
+              label="Vásárlás ideje"
+              v-model="purchaseDate"
+              :textFieldProps="textFieldProps"
             >
-              <template v-slot:activator="{ on }">
-                <v-text-field
-                  v-model="date"
-                  label="Vásárlás dátuma"
-                  prepend-icon="event"
-                  readonly
-                  v-on="on"
-                  :rules="validateRules"
-                ></v-text-field>
-              </template>
-              <v-date-picker
-                v-model="date"
-                @input="menu = false"
-              ></v-date-picker>
-            </v-menu>
-            <v-menu
-              ref="menu"
-              v-model="menu2"
-              :close-on-content-click="false"
-              :nudge-right="40"
-              :return-value.sync="time"
-              transition="scale-transition"
-              offset-y
-              max-width="290px"
-              min-width="290px"
-            >
-              <template v-slot:activator="{ on }">
-                <v-text-field
-                  v-model="time"
-                  label="Vásárlás ideje"
-                  prepend-icon="access_time"
-                  readonly
-                  v-on="on"
-                  :rules="validateRules"
-                ></v-text-field>
-              </template>
-              <v-time-picker
-                v-if="menu2"
-                v-model="time"
-                full-width
-                @click:minute="$refs.menu.save(time)"
-              ></v-time-picker>
-            </v-menu>
+            </v-datetime-picker>
           </v-form>
           <v-btn @click="createNewTransaction">Mentés</v-btn>
         </div>
@@ -85,7 +40,8 @@
 </template>
 
 <script>
-import InfoModal from "./InfoModal";
+import InfoModal from "./dialogs/InfoModal";
+
 export default {
   name: "TransactionCreator",
   components: { InfoModal },
@@ -93,12 +49,14 @@ export default {
     return {
       amount: null,
       quantity: null,
-      date: null,
-      time: null,
+      purchaseDate: null,
       menu: false,
       menu2: false,
       userID: null,
       validateRules: [v => !!v || "Kérem adjon meg egy érvényes értéket!"],
+      textFieldProps: {
+        rules: [v => !!v || "Kérem adjon meg egy érvényes dátumot!"]
+      },
       dialog: false
     };
   },
@@ -110,12 +68,10 @@ export default {
       }
     },
     buildTransaction: function() {
-      const dateString = this.date + " " + this.time;
-      const purchaseDate = new Date(dateString);
       return {
         quantity: parseFloat(this.quantity),
         purchase_price: parseFloat(this.amount),
-        date_of_purchase: purchaseDate,
+        date_of_purchase: this.purchaseDate,
         owner: this.userID
       };
     },

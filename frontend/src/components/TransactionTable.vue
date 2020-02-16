@@ -5,31 +5,47 @@
       :items="transactions"
       class="second elevation-1"
     >
+      <template v-slot:no-data>
+        Még nincs egyetlen aktív tranzakciód sem!
+      </template>
       <template v-slot:item.date_of_purchase="props">
-        <v-edit-dialog :return-value.sync="props.item.date_of_purchase">
+        <v-edit-dialog
+          v-if="!isClosedTransaction(props.item)"
+          large
+          persistent
+          save-text="Mentés"
+          cancel-text="Bezár"
+          @open="savePrevDateTime(props.item)"
+          @save="updateRow(props.item)"
+          @cancel="restorePrevPurchaseDate(props.item)"
+        >
           {{ props.item.date_of_purchase }}
           <template v-slot:input>
-            <v-text-field
-              v-if="
-                props.item.date_of_sell == null || props.item.date_of_sell == ''
-              "
+            <v-datetime-picker
+              label="Értékesítés időpontja"
               v-model="props.item.date_of_purchase"
-              label="Szerkesztés"
-              @keyup.enter="updateRow(props.item)"
-              single-line
-              counter
-            ></v-text-field>
+              @input="formatDateTime($event, props.item)"
+            >
+              <template slot="actions" slot-scope="{ parent }">
+                <v-btn color="success darken-1" @click="parent.okHandler()"
+                  >Rendben</v-btn
+                >
+              </template>
+            </v-datetime-picker>
           </template>
         </v-edit-dialog>
+        <span v-if="isClosedTransaction(props.item)">{{
+          props.item.date_of_sell
+        }}</span>
       </template>
       <template v-slot:item.quantity="props">
-        <v-edit-dialog :return-value.sync="props.item.quantity">
+        <v-edit-dialog
+          :return-value.sync="props.item.quantity"
+          v-if="!isClosedTransaction(props.item)"
+        >
           {{ props.item.quantity }}
           <template v-slot:input>
             <v-text-field
-              v-if="
-                props.item.date_of_sell == null || props.item.date_of_sell == ''
-              "
               v-model="props.item.quantity"
               label="Szerkesztés"
               @keyup.enter="updateRow(props.item)"
@@ -38,15 +54,18 @@
             ></v-text-field>
           </template>
         </v-edit-dialog>
+        <span v-if="isClosedTransaction(props.item)">{{
+          props.item.quantity
+        }}</span>
       </template>
       <template v-slot:item.purchase_price="props">
-        <v-edit-dialog :return-value.sync="props.item.amount">
+        <v-edit-dialog
+          :return-value.sync="props.item.purchase_price"
+          v-if="!isClosedTransaction(props.item)"
+        >
           {{ props.item.purchase_price }}
           <template v-slot:input>
             <v-text-field
-              v-if="
-                props.item.date_of_sell == null || props.item.date_of_sell == ''
-              "
               v-model="props.item.purchase_price"
               label="Szerkesztés"
               @keyup.enter="updateRow(props.item)"
@@ -55,9 +74,17 @@
             ></v-text-field>
           </template>
         </v-edit-dialog>
+        <span v-if="isClosedTransaction(props.item)">{{
+          props.item.purchase_price
+        }}</span>
       </template>
       <template v-slot:item.action="props">
-        <v-icon class="mr-2" small dark @click="openCloseDialog(props.item)">
+        <v-icon
+          class="mr-2"
+          small
+          dark
+          @click="openTransactionCloserDialog(props.item)"
+        >
           gavel
         </v-icon>
         <v-icon small dark @click="openDeleteDialog(props.item)">
@@ -73,7 +100,8 @@
     ></DeleteDialog>
     <CloseDialog
       v-model="closeDialog"
-      :item="actualItem"
+      :key="componentKey"
+      :actual-exchange-rate="exchangeRate"
       @cancel="closeDialog = false"
       @confirm="closeTransaction"
     >
@@ -82,13 +110,14 @@
 </template>
 
 <script>
-import DeleteDialog from "./DeleteDialog";
-import CloseDialog from "./CloseDialog";
+import DeleteDialog from "./dialogs/DeleteDialog";
+import CloseDialog from "./dialogs/CloseDialog";
+import formatter from "./util/DateFormatter";
 
 export default {
   name: "TransactionTable",
   components: { CloseDialog, DeleteDialog },
-  props: ["exchangeRate", "newTransaction"],
+  props: { exchangeRate: Number, newTransaction: Object },
   data: function() {
     return {
       headers: [
@@ -96,6 +125,7 @@ export default {
         { text: "Eladás dátuma", value: "date_of_sell" },
         { text: "Mennyiség", value: "quantity" },
         { text: "Árfolyam a vásárlás időpontjában", value: "purchase_price" },
+        { text: "Árfolyam az értékesítés időpontjában", value: "sell_price" },
         { text: "Nyereség %", value: "profit_percentage" },
         { text: "Nyereség $", value: "profit_usd" },
         { text: "Műveletek", value: "action" }
@@ -103,6 +133,8 @@ export default {
       deleteDialog: false,
       closeDialog: false,
       actualItem: null,
+      componentKey: 0,
+      prevPurchaseDate: null,
       transactions: []
     };
   },
@@ -110,8 +142,8 @@ export default {
     initTransactions: function() {
       this.$transAPI
         .getUsersTransactions()
-        .then(items => {
-          items.forEach(trans => {
+        .then(transactions => {
+          transactions.forEach(trans => {
             this.addNewTransaction(trans);
           });
         })
@@ -125,12 +157,20 @@ export default {
       const profit = this.isClosedTransaction(trans)
         ? this.calcProfit(trans, trans.sell_price)
         : this.calcProfit(trans, this.exchangeRate);
+
       return {
         id: trans.id,
-        date_of_purchase: new Date(trans.date_of_purchase).toISOString(),
-        date_of_sell: trans.date_of_sell,
+        date_of_purchase: formatter.getPrettyDate(
+          new Date(trans.date_of_purchase)
+        ),
+        date_of_sell: trans.hasOwnProperty("date_of_sell")
+          ? formatter.getPrettyDate(new Date(trans.date_of_sell))
+          : undefined,
         quantity: trans.quantity,
         purchase_price: trans.purchase_price.toFixed(2),
+        sell_price: trans.hasOwnProperty("sell_price")
+          ? trans.sell_price.toFixed(2)
+          : undefined,
         profit_percentage: profit.margin.toFixed(2),
         profit_usd: profit.profitInUSD.toFixed(2),
         owner: trans.owner
@@ -161,7 +201,7 @@ export default {
         .updateTransaction(newTrans)
         .catch(response => window.console.log(response));
     },
-    openCloseDialog: function(item) {
+    openTransactionCloserDialog: function(item) {
       this.actualItem = item;
       this.closeDialog = true;
     },
@@ -172,7 +212,7 @@ export default {
       this.$transAPI
         .updateTransaction(newTrans)
         .then(() => {
-          this.actualItem.date_of_sell = dateOfSell;
+          this.closeActualItem(dateOfSell, sellPrice);
           this.closeDialog = false;
         })
         .catch(response => window.console.log(response));
@@ -186,6 +226,14 @@ export default {
         owner: item.owner
       };
     },
+    closeActualItem: function(dateOfSell, sellPrice) {
+      const profit = this.calcProfit(this.actualItem, this.actualItem.sell_price);
+
+      this.actualItem.date_of_sell = formatter.getPrettyDate(dateOfSell);
+      this.actualItem.sell_price = sellPrice.toFixed(2);
+      this.actualItem.profit_usd = profit.profitInUSD.toFixed(2);
+      this.actualItem.profit_percentage = profit.margin.toFixed(2);
+    },
     openDeleteDialog: function(item) {
       this.actualItem = item;
       this.deleteDialog = true;
@@ -196,6 +244,15 @@ export default {
         this.actualItem.id
       );
       this.deleteDialog = false;
+    },
+    formatDateTime: function(datetime, item) {
+      item.date_of_purchase = formatter.getPrettyDate(datetime);
+    },
+    savePrevDateTime: function(item) {
+      this.prevPurchaseDate = item.date_of_purchase;
+    },
+    restorePrevPurchaseDate: function(item) {
+      item.date_of_purchase = formatter.getPrettyDate(new Date(this.prevPurchaseDate));
     }
   },
   watch: {
@@ -210,6 +267,11 @@ export default {
     },
     newTransaction: function(trans) {
       this.addNewTransaction(trans);
+    },
+    closeDialog: function() {
+      if (this.closeDialog === true) {
+        this.componentKey += 1;
+      }
     }
   },
   mounted() {

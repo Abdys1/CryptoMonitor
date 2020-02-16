@@ -1,6 +1,7 @@
 import Vue from "vue";
 import VueRouter from "vue-router";
 import VueSession from "vue-session";
+import DatetimePicker from 'vuetify-datetime-picker'
 import App from "./App.vue";
 import vuetify from "./plugins/vuetify";
 import axios from "axios";
@@ -17,6 +18,7 @@ Vue.use(VueSession);
 Vue.use(VueNativeSock, "ws://" + window.location.host + "/ws/exchangeRate", {
   connectManually: true
 });
+Vue.use(DatetimePicker);
 
 const base = axios.create({
   baseURL: "http://127.0.0.1:8000",

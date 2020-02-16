@@ -21,6 +21,7 @@ class TransactionController {
         .catch(response => reject(response));
     });
   }
+  //TODO Ha nem érvényes a tranzakció, akkor ne küldje el a szervernek
 
   deleteTransaction(transactions, deletedTransID) {
     return this.http.delete(this.url + deletedTransID).then(() => {
