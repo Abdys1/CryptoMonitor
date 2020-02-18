@@ -150,15 +150,12 @@ class TransactionMonitorTest(APITestCase):
         ord_dicts = response.data["transactions"]
         result_trans = self.transactionOrderDictToList(ord_dicts)
         self.assertListEqual(result_trans, first_ten_trans)
-        self.assertTrue(response.data["hasNext"])
-        self.assertFalse(response.data["hasPrev"])
 
         response = self.client.get(self.url + "?page_num=2")
         ord_dicts = response.data["transactions"]
         result_trans = self.transactionOrderDictToList(ord_dicts)
         self.assertListEqual(result_trans, [last_trans])
-        self.assertTrue(response.data["hasPrev"])
-        self.assertFalse(response.data["hasNext"])
+        self.assertEquals(response.data["pageCount"], 2)
 
     def transactionOrderDictToList(self, ord_dicts):
         result = []

@@ -94,6 +94,16 @@
         </v-icon>
       </template>
     </v-data-table>
+    <div class="text-center pt-2">
+      <v-pagination
+        v-model="page"
+        :length="pageCount"
+        @next="initTransactions()"
+        @previous="initTransactions()"
+        @input="initTransactions()"
+        dark
+      ></v-pagination>
+    </div>
     <DeleteDialog
       v-model="deleteDialog"
       :item="actualItem"
@@ -136,16 +146,21 @@ export default {
       closeDialog: false,
       actualItem: null,
       componentKey: 0,
-      numberOfItems: 2,
+      numberOfItems: 10,
+      page: 1,
+      pageCount: 0,
       prevPurchaseDate: null,
       transactions: []
     };
   },
   methods: {
     initTransactions: function() {
+      this.transactions = [];
       this.$transAPI
-        .getUsersTransactions(1)
-        .then(transactions => {
+        .getUsersTransactions(this.page)
+        .then(response => {
+          this.pageCount = response["pageCount"];
+          let transactions = response["transactions"];
           transactions.forEach(trans => {
             this.addNewTransaction(trans);
           });

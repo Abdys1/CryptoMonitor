@@ -34,12 +34,11 @@ class TransactionDetail(mixins.CreateModelMixin,
         transactions = Transaction.objects.filter(owner=user)
         if "page_num" in request.GET:
             page_number = int(request.GET["page_num"])
-            paginator = Paginator(list(transactions), 2)
+            paginator = Paginator(list(transactions), 10)
+            page_count = paginator.num_pages
             page = paginator.page(page_number)
-            has_next = page.has_next()
-            has_prev = page.has_previous()
             serializer = TransactionSerializer(page.object_list, many=True)
-            return Response(data={"hasNext": has_next, "hasPrev": has_prev, "transactions": serializer.data})
+            return Response(data={"pageCount": page_count, "transactions": serializer.data})
         else:
             serializer = TransactionSerializer(transactions, many=True)
             return Response(data=serializer.data)

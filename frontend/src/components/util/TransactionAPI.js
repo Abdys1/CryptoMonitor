@@ -8,7 +8,12 @@ class TransactionController {
     return new Promise((resolve, reject) => {
       this.http
         .get(this.url + `?page_num=${pageNumber}`)
-        .then(response => resolve(response.data.hasOwnProperty("transactions") ? response.data["transactions"] : []))
+        .then(response => {
+          if (response.data.hasOwnProperty("transactions") && response.data.hasOwnProperty("pageCount"))
+            resolve(response.data)
+          else
+            reject("Cannot fetch data!")
+        })
         .catch(response => reject(response));
     });
   }
