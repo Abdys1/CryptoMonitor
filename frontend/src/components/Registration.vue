@@ -53,15 +53,23 @@
             </v-btn>
           </v-layout>
         </v-layout>
+        <InfoModal
+          title="Sikeres regisztráció"
+          message="Most már bejelentkezhet!"
+          v-model="dialog"
+          @verify-message="redirectLoginPage"
+        ></InfoModal>
       </v-col>
     </v-row>
   </v-container>
 </template>
 
 <script>
+import InfoModal from "./dialogs/InfoModal";
+
 export default {
   name: "Registration",
-  components: {},
+  components: { InfoModal },
   data: function() {
     return {
       valid: false,
@@ -95,31 +103,14 @@ export default {
   methods: {
     signUp: function() {
       if (this.$refs.form.validate()) {
-        this.$http
-          .post("/auth/registration/", {
-            username: this.username,
-            email: this.email,
-            password: this.password
+        this.$authAPI
+          .registration(this.username, this.email, this.password)
+          .then(() => {
+            this.$refs.form.reset();
+            this.dialog = true;
           })
-          .then(response => {
-            if (response.status === 200) {
-              const errors = JSON.parse(response.data);
-              this.getFirstError(errors);
-            } else if (response.status === 201) {
-              this.$refs.form.reset();
-              this.$dialog
-                .alert("Most már bejelentkezhet!", {
-                  okText: "Rendben",
-                  title: "Sikeres bejelentkezés"
-                })
-                .then(() => this.redirectLoginPage());
-            }
-          });
+          .catch(error => (this.error = error));
       }
-    },
-    getFirstError: function(errors) {
-      if (errors.hasOwnProperty("username")) this.error = errors.username[0];
-      else if (errors.hasOwnProperty("email")) this.error = errors.email[0];
     },
     redirectLoginPage: function() {
       this.$router.push("/login");

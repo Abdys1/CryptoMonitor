@@ -4,6 +4,8 @@
       :headers="headers"
       :items="transactions"
       :items-per-page="numberOfItems"
+      :loading="loading"
+      loading-text="Kis türelmet..."
       hide-default-footer
       class="second elevation-1"
     >
@@ -94,13 +96,12 @@
         </v-icon>
       </template>
     </v-data-table>
+
     <div class="text-center pt-2">
       <v-pagination
         v-model="page"
         :length="pageCount"
-        @next="initTransactions()"
-        @previous="initTransactions()"
-        @input="initTransactions()"
+        :total-visible="6"
         dark
       ></v-pagination>
     </div>
@@ -148,6 +149,7 @@ export default {
       componentKey: 0,
       numberOfItems: 10,
       page: 1,
+      loading: false,
       pageCount: 0,
       prevPurchaseDate: null,
       transactions: []
@@ -156,6 +158,7 @@ export default {
   methods: {
     initTransactions: function() {
       this.transactions = [];
+      this.loading = true;
       this.$transAPI
         .getUsersTransactions(this.page)
         .then(response => {
@@ -164,8 +167,9 @@ export default {
           transactions.forEach(trans => {
             this.addNewTransaction(trans);
           });
+          this.loading = false;
         })
-        .catch(response => window.console.log(response));
+        .catch(() => this.loading = false);
     },
     addNewTransaction: function(trans) {
       let newTrans = this.createTransaction(trans);
@@ -205,9 +209,8 @@ export default {
       const floatPurchasePrice = parseFloat(trans.purchase_price);
       const floatExchangeRate = parseFloat(exchangeRate);
 
-      const profitInUSD =
-        floatQuantity * floatExchangeRate - floatQuantity * floatPurchasePrice;
-      const margin = (profitInUSD / (floatQuantity * floatExchangeRate)) * 100;
+      let profitInUSD = floatQuantity * floatExchangeRate - floatQuantity * floatPurchasePrice;
+      let margin = (profitInUSD / (floatQuantity * floatExchangeRate)) * 100;
       return {
         profitInUSD: profitInUSD,
         margin: margin
@@ -245,13 +248,10 @@ export default {
       };
     },
     closeActualItem: function(dateOfSell, sellPrice) {
-      const profit = this.calcProfit(
-        this.actualItem,
-        this.actualItem.sell_price
-      );
+      const profit = this.calcProfit(this.actualItem, sellPrice);
 
       this.actualItem.date_of_sell = formatter.getPrettyDate(dateOfSell);
-      this.actualItem.sell_price = sellPrice.toFixed(2);
+      this.actualItem.sell_price = parseFloat(sellPrice).toFixed(2);
       this.actualItem.profit_usd = profit.profitInUSD.toFixed(2);
       this.actualItem.profit_percentage = profit.margin.toFixed(2);
     },
@@ -264,6 +264,13 @@ export default {
         this.transactions,
         this.actualItem.id
       );
+      if(this.transactions.length == 0) {
+        this.pageCount -= 1;
+        this.page -= 1;
+      }
+      else if (this.pageCount > 1) {
+        this.initTransactions();
+      }
       this.deleteDialog = false;
     },
     formatDateTime: function(datetime, item) {
@@ -292,11 +299,18 @@ export default {
       if (this.numberOfItems > this.transactions.length) {
         this.addNewTransaction(trans);
       }
+      else {
+        this.pageCount += 1;
+        this.page += 1;
+      }
     },
     closeDialog: function() {
       if (this.closeDialog === true) {
         this.componentKey += 1;
       }
+    },
+    page: function () {
+      this.initTransactions();
     }
   },
   mounted() {

@@ -52,25 +52,19 @@ export default {
   methods: {
     signIn: function() {
       if (this.username !== "" && this.password !== "") {
-        this.$http
-          .post("/api-token-auth/", {
-            username: this.username,
-            password: this.password
-          })
-          .then(response => {
-            if (response.status === 200 && "token" in response.data) {
-              this.$session.start();
-              this.$session.set("jwt", response.data.token);
-              localStorage.setItem("token", response.data.token);
-              document.cookie = "Authorization=Token " + response.data.token;
-              this.$router.push("/monitor");
-            }
+        this.$authAPI
+          .login(this.username, this.password)
+          .then(token => {
+            this.$session.start();
+            this.$session.set("jwt", token);
+            localStorage.setItem("token", token);
+            document.cookie = "Authorization=Token " + token;
+            this.$router.push("/monitor");
           })
           .catch(err => {
-            this.error = "Helytelen felhasználónév vagy jelszó!";
+            this.error = err;
             localStorage.removeItem("token");
             document.cookie = "Authorization=";
-            window.console.log(err);
           });
       } else {
         this.error = "Adjon meg egy érvényes felhasználónevet és/vagy jelszót!";

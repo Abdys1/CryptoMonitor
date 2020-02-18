@@ -21,6 +21,8 @@
             </v-text-field>
             <v-datetime-picker
               label="Vásárlás ideje"
+              clear-text="Törlés"
+              ok-text="Rendben"
               v-model="purchaseDate"
               :textFieldProps="textFieldProps"
             >

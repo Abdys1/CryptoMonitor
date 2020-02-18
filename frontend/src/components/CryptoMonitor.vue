@@ -1,22 +1,34 @@
 <template>
   <v-app class="content">
-    <v-container>
-      <v-row>
-        <v-col sm="3">
-          <TransactionCreator @created="setNewTransaction"></TransactionCreator>
-          <br />
-          <ExchangeRateIndicator
-            @refreshExchangeRate="refreshTable"
-          ></ExchangeRateIndicator>
-        </v-col>
-        <v-col>
-          <TransactionTable
-            :exchangeRate="exchangeRate"
-            :newTransaction="lastTransaction"
-          ></TransactionTable>
-        </v-col>
-      </v-row>
-    </v-container>
+    <v-app-bar app dark>
+      <v-toolbar-title>Kriptomonitor</v-toolbar-title>
+      <v-spacer />
+      <v-btn class="mx-2" fab dark @click="exitApp">
+        <v-icon>mdi-exit-to-app</v-icon>
+      </v-btn>
+    </v-app-bar>
+
+    <v-content>
+      <v-container>
+        <v-row>
+          <v-col sm="3">
+            <TransactionCreator
+              @created="setNewTransaction"
+            ></TransactionCreator>
+            <br />
+            <ExchangeRateIndicator
+              @refreshExchangeRate="refreshTable"
+            ></ExchangeRateIndicator>
+          </v-col>
+          <v-col>
+            <TransactionTable
+              :exchangeRate="exchangeRate"
+              :newTransaction="lastTransaction"
+            ></TransactionTable>
+          </v-col>
+        </v-row>
+      </v-container>
+    </v-content>
   </v-app>
 </template>
 
@@ -40,6 +52,12 @@ export default {
     },
     setNewTransaction: function(newTrans) {
       this.lastTransaction = newTrans;
+    },
+    exitApp: function () {
+      this.$http.defaults.headers.common["Authorization"] = "";
+      window.cookie = "Authorization=";
+      localStorage.removeItem("token");
+      this.$router.push("/");
     }
   },
   beforeCreate() {
@@ -47,10 +65,7 @@ export default {
       this.$http.defaults.headers.common["Authorization"] =
         "Token " + localStorage.getItem("token");
     } else {
-      this.$http.defaults.headers.common["Authorization"] = "";
-      window.cookie = "Authorization=";
-      localStorage.removeItem("token");
-      this.$router.push("/");
+      this.exitApp();
     }
   }
 };
@@ -62,30 +77,5 @@ export default {
   background-repeat: no-repeat;
   background-size: cover;
   height: 100%;
-}
-</style>
-
-<style>
-.dg-main-content {
-  background-color: #262626;
-}
-
-.dg-content {
-  color: white;
-}
-
-.dg-btn--ok {
-  background-color: red;
-  border-color: transparent;
-  color: white;
-}
-
-.dg-btn--ok:active {
-  background-color: grey;
-}
-
-.dg-btn--cancel {
-  color: white;
-  background-color: #212121;
 }
 </style>

@@ -11,6 +11,7 @@ import Registration from "./components/Registration";
 import CryptoMonitor from "./components/CryptoMonitor";
 import VueNativeSock from "vue-native-websocket";
 import TransactionController from "./components/util/TransactionAPI";
+import AuthenticationAPI from "./components/util/AuthenticationAPI";
 
 Vue.config.productionTip = false;
 Vue.use(VueRouter);
@@ -29,6 +30,7 @@ const base = axios.create({
 Vue.prototype.$http = base;
 Vue.prototype.$socket = VueNativeSock.socket;
 Vue.prototype.$transAPI = new TransactionController(Vue.prototype.$http);
+Vue.prototype.$authAPI = new AuthenticationAPI(Vue.prototype.$http);
 
 const routes = [
   {

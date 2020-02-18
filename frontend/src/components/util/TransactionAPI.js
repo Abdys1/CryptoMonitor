@@ -21,7 +21,7 @@ class TransactionController {
   updateTransaction(newTrans) {
     return new Promise((resolve, reject) => {
       this.http
-        .put(this.url + newTrans.id, newTrans)
+        .put(this.url + `\\${newTrans.id}`, newTrans)
         .then(response => resolve(response.data))
         .catch(response => reject(response));
     });
@@ -29,7 +29,7 @@ class TransactionController {
   //TODO Ha nem érvényes a tranzakció, akkor ne küldje el a szervernek
 
   deleteTransaction(transactions, deletedTransID) {
-    return this.http.delete(this.url + deletedTransID).then(() => {
+    return this.http.delete(this.url + `\\${deletedTransID}`).then(() => {
       let filtered = transactions.filter(function(value) {
         return value.id !== deletedTransID;
       });
