@@ -1,5 +1,4 @@
 import requests
-from django.utils.datetime_safe import time
 
 from .exceptions import CannotGetMarketInfo
 

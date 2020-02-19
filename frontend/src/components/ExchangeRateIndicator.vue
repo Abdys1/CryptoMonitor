@@ -3,7 +3,7 @@
     <v-card-title>Aktuális árfolyam</v-card-title>
     <v-card-text>
       <div>
-        <h1>{{ exchangeRate }}</h1>
+        <h1>{{ floatExchangeRate }}</h1>
       </div>
     </v-card-text>
   </v-card>
@@ -19,6 +19,11 @@ export default {
       exchangeRate: 0
     };
   },
+  computed: {
+    floatExchangeRate: function () {
+      return this.exchangeRate.toFixed(2);
+    }
+  },
   mounted() {
     this.$connect();
     setInterval(function() {
@@ -27,7 +32,7 @@ export default {
       }
     }, 1500);
     this.$options.sockets.onmessage = function(msg) {
-      this.exchangeRate = parseFloat(parseFloat(msg.data).toFixed(2));
+      this.exchangeRate = parseFloat(msg.data);
       this.$emit("refreshExchangeRate", this.exchangeRate);
     };
   }

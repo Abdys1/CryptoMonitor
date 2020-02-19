@@ -3,17 +3,21 @@
     <v-dialog v-model="show" persistent max-width="290">
       <v-card>
         <v-card-title class="headline">Tranzakció lezárása</v-card-title>
-        <v-form>
+        <v-form ref="closeForm">
           <v-text-field
             label="Árfolyam az értékesítés pillanatában"
             prefix="$"
             type="number"
             v-model="sellPrice"
+            :rules="rules"
           ></v-text-field>
-          <v-datetime-picker
-                  v-model="sellDate"
-                  label="Értékesítés dátuma"
-          ></v-datetime-picker>
+          <v-datetime-picker v-model="sellDate" label="Értékesítés dátuma">
+            <template slot="actions" slot-scope="{ parent }">
+              <v-btn color="success darken-1" @click="parent.okHandler()"
+                >Rendben</v-btn
+              >
+            </template>
+          </v-datetime-picker>
         </v-form>
         <v-card-actions>
           <v-spacer></v-spacer>
@@ -35,7 +39,8 @@ export default {
   data: function() {
     return {
       sellPrice: this.actualExchangeRate,
-      sellDate: new Date()
+      sellDate: new Date(),
+      rules: [v => !!v || "Kérem adjon meg egy érvényes értéket!"]
     };
   },
   computed: {
@@ -53,7 +58,9 @@ export default {
       this.$emit("cancel");
     },
     confirm: function() {
-      this.$emit("confirm", this.sellDate, this.sellPrice);
+      if (this.$refs.closeForm.validate()) {
+        this.$emit("confirm", this.sellDate, this.sellPrice);
+      }
     }
   }
 };

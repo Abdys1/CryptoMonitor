@@ -10,7 +10,6 @@ from .models import Transaction
 class TransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Transaction
-        # fields = ["id", "quantity", "purchase_price", "date_of_purchase", "date_of_sell", "owner"]
         fields = "__all__"
 
     def to_representation(self, instance):

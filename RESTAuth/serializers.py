@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
@@ -7,7 +8,7 @@ class UserSerializer(serializers.ModelSerializer):
     def validate_email(self, value):
         try:
             user_with_same_email = User.objects.get(email=value)
-        except:
+        except ObjectDoesNotExist:
             user_with_same_email = None
 
         if value == "":
