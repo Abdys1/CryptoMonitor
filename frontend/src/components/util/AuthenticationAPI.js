@@ -56,6 +56,19 @@ class AuthenticationAPI {
         });
     });
   }
+
+  getUserInformation() {
+    return new Promise((resolve, reject) => {
+      this.http
+          .get("/auth/account")
+          .then(response => {
+            resolve(response.data);
+          })
+          .catch(err => {
+            return reject(err);
+          })
+    });
+  }
 }
 
 export default AuthenticationAPI;

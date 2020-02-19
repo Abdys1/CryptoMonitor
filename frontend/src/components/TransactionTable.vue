@@ -207,10 +207,9 @@ export default {
     calcProfit: function(trans, exchangeRate) {
       const floatQuantity = parseFloat(trans.quantity);
       const floatPurchasePrice = parseFloat(trans.purchase_price);
-      const floatExchangeRate = parseFloat(exchangeRate);
 
-      let profitInUSD = floatQuantity * floatExchangeRate - floatQuantity * floatPurchasePrice;
-      let margin = (profitInUSD / (floatQuantity * floatExchangeRate)) * 100;
+      let profitInUSD = floatQuantity * exchangeRate - floatQuantity * floatPurchasePrice;
+      let margin = (profitInUSD / (floatQuantity * exchangeRate)) * 100;
       return {
         profitInUSD: profitInUSD,
         margin: margin

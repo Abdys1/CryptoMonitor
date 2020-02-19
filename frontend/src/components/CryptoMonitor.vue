@@ -13,17 +13,17 @@
         <v-row>
           <v-col sm="3">
             <TransactionCreator
-              @created="setNewTransaction"
+              @create="setNewTransaction"
             ></TransactionCreator>
             <br />
             <ExchangeRateIndicator
-              @refreshExchangeRate="refreshTable"
+              @refreshExchangeRate="refreshExRate"
             ></ExchangeRateIndicator>
           </v-col>
           <v-col>
             <TransactionTable
               :exchangeRate="exchangeRate"
-              :newTransaction="lastTransaction"
+              :newTransaction="newTransaction"
             ></TransactionTable>
           </v-col>
         </v-row>
@@ -43,27 +43,27 @@ export default {
   data: function() {
     return {
       exchangeRate: 0,
-      lastTransaction: null
+      newTransaction: null
     };
   },
   methods: {
-    refreshTable: function(exRate) {
+    refreshExRate: function(exRate) {
       this.exchangeRate = exRate;
     },
     setNewTransaction: function(newTrans) {
-      this.lastTransaction = newTrans;
+      this.newTransaction = newTrans;
     },
     exitApp: function () {
       this.$http.defaults.headers.common["Authorization"] = "";
       window.cookie = "Authorization=";
-      localStorage.removeItem("token");
+      this.$session.destroy();
       this.$router.push("/");
     }
   },
   beforeCreate() {
     if (this.$session.exists()) {
       this.$http.defaults.headers.common["Authorization"] =
-        "Token " + localStorage.getItem("token");
+        "Token " + this.$session.get("jwt");
     } else {
       this.exitApp();
     }

@@ -27,8 +27,8 @@ export default {
       }
     }, 1500);
     this.$options.sockets.onmessage = function(msg) {
-      this.exchangeRate = parseFloat(msg.data).toFixed(2);
-      this.$emit("refreshExchangeRate", parseFloat(this.exchangeRate));
+      this.exchangeRate = parseFloat(parseFloat(msg.data).toFixed(2));
+      this.$emit("refreshExchangeRate", this.exchangeRate);
     };
   }
 };

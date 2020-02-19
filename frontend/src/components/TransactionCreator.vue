@@ -9,7 +9,7 @@
               label="Árfolyam"
               prefix="$"
               type="number"
-              v-model="amount"
+              v-model="purchasePrice"
               :rules="validateRules"
             ></v-text-field>
             <v-text-field
@@ -33,8 +33,8 @@
       </v-card-text>
     </v-card>
     <InfoModal
-      title="Új tranzakció"
-      message="Sikeresen felvetted az új tranzakciót!"
+      :title="infoTitle"
+      :message="message"
       v-model="dialog"
       @verify-message="dialog = false"
     ></InfoModal>
@@ -49,17 +49,17 @@ export default {
   components: { InfoModal },
   data: function() {
     return {
-      amount: null,
+      purchasePrice: null,
       quantity: null,
       purchaseDate: null,
-      menu: false,
-      menu2: false,
       userID: null,
       validateRules: [v => !!v || "Kérem adjon meg egy érvényes értéket!"],
       textFieldProps: {
         rules: [v => !!v || "Kérem adjon meg egy érvényes dátumot!"]
       },
-      dialog: false
+      dialog: false,
+      infoTitle: "",
+      message: ""
     };
   },
   methods: {
@@ -72,7 +72,7 @@ export default {
     buildTransaction: function() {
       return {
         quantity: parseFloat(this.quantity),
-        purchase_price: parseFloat(this.amount),
+        purchase_price: parseFloat(this.purchasePrice),
         date_of_purchase: this.purchaseDate,
         owner: this.userID
       };
@@ -82,17 +82,39 @@ export default {
         .saveTransaction(newTrans)
         .then(createdTrans => {
           this.$refs.form.reset();
-          this.dialog = true;
-          this.$emit("created", createdTrans);
+          this.showDialog(
+            "Új tranzakció",
+            "Sikeresen felvetted az új tranzakciót!"
+          );
+          this.$emit("create", createdTrans);
         })
-        .catch(err => window.console.log(err));
+        .catch(err => {
+          this.showDialog(
+            "Hiba történt",
+            "Nem sikerült véglegesíteni a tranzakciót! Kérlek, próbáld újra!"
+          );
+          window.console.log(err);
+        });
+    },
+    showDialog(title, msg) {
+      this.infoTitle = title;
+      this.message = msg;
+      this.dialog = true;
     }
   },
-  beforeCreate() {
-    this.$http
-      .get("/auth/account")
-      .then(response => (this.userID = response.data.id))
-      .catch(err => window.console.log(err));
+  mounted() {
+    this.$authAPI
+      .getUserInformation()
+      .then(info => {
+        this.userID = info.id;
+      })
+      .catch(err => {
+        this.showDialog(
+          "Hiba történt!",
+          "Nem sikerült lekérni a szükséges adatokat!"
+        );
+        window.console.log(err);
+      });
   }
 };
 </script>

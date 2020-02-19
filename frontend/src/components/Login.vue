@@ -54,21 +54,20 @@ export default {
       if (this.username !== "" && this.password !== "") {
         this.$authAPI
           .login(this.username, this.password)
-          .then(token => {
-            this.$session.start();
-            this.$session.set("jwt", token);
-            localStorage.setItem("token", token);
-            document.cookie = "Authorization=Token " + token;
-            this.$router.push("/monitor");
-          })
+          .then(token => this.setSession(token))
           .catch(err => {
             this.error = err;
-            localStorage.removeItem("token");
             document.cookie = "Authorization=";
           });
       } else {
         this.error = "Adjon meg egy érvényes felhasználónevet és/vagy jelszót!";
       }
+    },
+    setSession: function(token) {
+      this.$session.start();
+      this.$session.set("jwt", token);
+      document.cookie = "Authorization=Token " + token;
+      this.$router.push("/monitor");
     }
   }
 };
