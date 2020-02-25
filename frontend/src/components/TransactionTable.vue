@@ -93,17 +93,17 @@
         }}</v-chip>
       </template>
       <template v-slot:item.action="props">
-        <v-icon
-          class="mr-2"
-          small
-          dark
-          @click="openTransactionCloserDialog(props.item)"
+        <TransactionCloseButton
+          :exchange-rate="exchangeRate"
+          :trans="props.item"
+          @transClosed="initTransactions"
         >
-          gavel
-        </v-icon>
-        <v-icon small dark @click="openDeleteDialog(props.item)">
-          delete
-        </v-icon>
+        </TransactionCloseButton>
+        <TransactionDeleteButton
+          :trans-id="props.item.id"
+          @transDeleted="initTransactions"
+        >
+        </TransactionDeleteButton>
       </template>
     </v-data-table>
 
@@ -115,32 +115,19 @@
         dark
       ></v-pagination>
     </div>
-    <DeleteDialog
-      v-model="deleteDialog"
-      :item="actualItem"
-      @cancel="deleteDialog = false"
-      @confirm="deleteTransaction"
-    ></DeleteDialog>
-    <CloseDialog
-      v-model="closeDialog"
-      :key="componentKey"
-      :actual-exchange-rate="exchangeRate"
-      @cancel="closeDialog = false"
-      @confirm="closeTransaction"
-    >
-    </CloseDialog>
   </v-col>
 </template>
 
 <script>
-import DeleteDialog from "./dialogs/DeleteDialog";
-import CloseDialog from "./dialogs/CloseDialog";
 import formatter from "./util/DateFormatter";
 import calcProfit from "./util/ProfitCalculator";
+import TransactionDeleteButton from "./TransactionDeleteButton";
+import Transaction from "./util/Transaction";
+import TransactionCloseButton from "./TransactionCloseButton";
 
 export default {
   name: "TransactionTable",
-  components: { CloseDialog, DeleteDialog },
+  components: {TransactionCloseButton, TransactionDeleteButton},
   props: { exchangeRate: Number, newTransaction: Object },
   data: function() {
     return {
@@ -148,18 +135,14 @@ export default {
         { text: "Vásárlás dátuma", value: "date_of_purchase" },
         { text: "Értékesítés dátuma", value: "date_of_sell" },
         { text: "Árfolyam a vásárlás időpontjában", value: "purchase_price" },
-        { text: "Elköltött összeg $", value: "buy_amount"},
+        { text: "Elköltött összeg $", value: "buy_amount" },
         { text: "Mennyiség", value: "quantity" },
         { text: "Árfolyam az értékesítés időpontjában", value: "sell_price" },
-        { text: "Jelenlegi összeg $", value: "sell_amount"},
+        { text: "Jelenlegi összeg $", value: "sell_amount" },
         { text: "Haszonkulcs", value: "profit_percentage" },
         { text: "Nyereség", value: "profit_usd" },
         { text: "Műveletek", value: "action" }
       ],
-      deleteDialog: false,
-      closeDialog: false,
-      actualItem: null,
-      componentKey: 0,
       numberOfItems: 10,
       page: 1,
       loading: false,
@@ -212,67 +195,18 @@ export default {
       };
     },
     getCurrentAmount: function(trans) {
-      return "sell_price" in trans ? (trans.quantity * trans.sell_price) : (trans.quantity * this.exchangeRate);
+      return "sell_price" in trans
+        ? trans.quantity * trans.sell_price
+        : trans.quantity * this.exchangeRate;
     },
     isClosedTransaction: function(trans) {
       return !!trans.date_of_sell && !!trans.sell_price;
     },
     updateRow: function(item) {
-      const newTrans = this.buildTransaction(item);
+      const newTrans = new Transaction(item);
       this.$transAPI
         .updateTransaction(newTrans)
         .catch(response => window.console.log(response));
-    },
-    openTransactionCloserDialog: function(item) {
-      this.actualItem = item;
-      this.closeDialog = true;
-    },
-    closeTransaction: function(dateOfSell, sellPrice) {
-      let newTrans = this.buildTransaction(this.actualItem);
-      newTrans.date_of_sell = dateOfSell;
-      newTrans.sell_price = sellPrice;
-      this.$transAPI
-        .updateTransaction(newTrans)
-        .then(() => {
-          this.closeActualItem(dateOfSell, sellPrice);
-          this.closeDialog = false;
-        })
-        .catch(response => window.console.log(response));
-    },
-    buildTransaction: function(item) {
-      return {
-        id: item.id,
-        quantity: item.quantity,
-        date_of_purchase: new Date(item.date_of_purchase),
-        buy_amount: item.buy_amount,
-        owner: item.owner
-      };
-    },
-    closeActualItem: function(dateOfSell, sellPrice) {
-      const profit = calcProfit(this.actualItem, sellPrice);
-
-      this.actualItem.sell_amount = this.actualItem.quantity * sellPrice;
-      this.actualItem.date_of_sell = formatter.getPrettyDate(dateOfSell);
-      this.actualItem.sell_price = parseFloat(sellPrice).toFixed(2);
-      this.actualItem.profit_usd = profit.profitInUSD;
-      this.actualItem.profit_percentage = profit.markup;
-    },
-    openDeleteDialog: function(item) {
-      this.actualItem = item;
-      this.deleteDialog = true;
-    },
-    deleteTransaction: async function() {
-      this.transactions = await this.$transAPI.deleteTransaction(
-        this.transactions,
-        this.actualItem.id
-      );
-      if (this.transactions.length == 0) {
-        this.pageCount -= 1;
-        this.page -= 1;
-      } else if (this.pageCount > 1) {
-        this.initTransactions();
-      }
-      this.deleteDialog = false;
     },
     formatDateTime: function(datetime, item) {
       item.date_of_purchase = formatter.getPrettyDate(datetime);
@@ -306,11 +240,6 @@ export default {
       } else {
         this.pageCount += 1;
         this.page += 1;
-      }
-    },
-    closeDialog: function() {
-      if (this.closeDialog === true) {
-        this.componentKey += 1;
       }
     },
     page: function() {

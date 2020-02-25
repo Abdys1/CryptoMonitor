@@ -19,7 +19,6 @@ export default {
   name: "DeleteDialog",
   props: {
     value: Boolean,
-    item: Object
   },
   computed: {
     show: {
@@ -36,7 +35,7 @@ export default {
       this.$emit("cancel");
     },
     confirm: function() {
-      this.$emit("confirm", this.item);
+      this.$emit("confirm");
     }
   }
 };
