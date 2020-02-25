@@ -9,7 +9,7 @@
               label="Árfolyam"
               prefix="$"
               type="number"
-              v-model="purchasePrice"
+              v-model="buyAmount"
               :rules="validateRules"
             ></v-text-field>
             <v-text-field
@@ -49,7 +49,7 @@ export default {
   components: { InfoModal },
   data: function() {
     return {
-      purchasePrice: null,
+      buyAmount: null,
       quantity: null,
       purchaseDate: null,
       userID: null,
@@ -72,7 +72,7 @@ export default {
     buildTransaction: function() {
       return {
         quantity: parseFloat(this.quantity),
-        purchase_price: parseFloat(this.purchasePrice),
+        buy_amount: parseFloat(this.buyAmount),
         date_of_purchase: this.purchaseDate,
         owner: this.userID
       };

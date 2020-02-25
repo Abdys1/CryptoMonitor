@@ -62,15 +62,15 @@
           props.item.quantity
         }}</span>
       </template>
-      <template v-slot:item.purchase_price="props">
+      <template v-slot:item.buy_amount="props">
         <v-edit-dialog
-          :return-value.sync="props.item.purchase_price"
+          :return-value.sync="props.item.buy_amount"
           v-if="!isClosedTransaction(props.item)"
         >
-          {{ props.item.purchase_price }}
+          {{ props.item.buy_amount }}
           <template v-slot:input>
             <v-text-field
-              v-model="props.item.purchase_price"
+              v-model="props.item.buy_amount"
               label="Szerkesztés"
               @keyup.enter="updateRow(props.item)"
               single-line
@@ -79,8 +79,18 @@
           </template>
         </v-edit-dialog>
         <span v-if="isClosedTransaction(props.item)">{{
-          props.item.purchase_price
+          props.item.buy_amount
         }}</span>
+      </template>
+      <template v-slot:item.profit_percentage="props">
+        <v-chip :color="getColor(props.item)">{{
+          props.item.profit_percentage
+        }}</v-chip>
+      </template>
+      <template v-slot:item.profit_usd="props">
+        <v-chip :color="getColor(props.item)">{{
+          props.item.profit_usd
+        }}</v-chip>
       </template>
       <template v-slot:item.action="props">
         <v-icon
@@ -126,6 +136,7 @@
 import DeleteDialog from "./dialogs/DeleteDialog";
 import CloseDialog from "./dialogs/CloseDialog";
 import formatter from "./util/DateFormatter";
+import calcProfit from "./util/ProfitCalculator";
 
 export default {
   name: "TransactionTable",
@@ -135,12 +146,14 @@ export default {
     return {
       headers: [
         { text: "Vásárlás dátuma", value: "date_of_purchase" },
-        { text: "Eladás dátuma", value: "date_of_sell" },
-        { text: "Mennyiség", value: "quantity" },
+        { text: "Értékesítés dátuma", value: "date_of_sell" },
         { text: "Árfolyam a vásárlás időpontjában", value: "purchase_price" },
+        { text: "Elköltött összeg $", value: "buy_amount"},
+        { text: "Mennyiség", value: "quantity" },
         { text: "Árfolyam az értékesítés időpontjában", value: "sell_price" },
-        { text: "Nyereség %", value: "profit_percentage" },
-        { text: "Nyereség $", value: "profit_usd" },
+        { text: "Jelenlegi összeg $", value: "sell_amount"},
+        { text: "Haszonkulcs", value: "profit_percentage" },
+        { text: "Nyereség", value: "profit_usd" },
         { text: "Műveletek", value: "action" }
       ],
       deleteDialog: false,
@@ -169,7 +182,7 @@ export default {
           });
           this.loading = false;
         })
-        .catch(() => this.loading = false);
+        .catch(() => (this.loading = false));
     },
     addNewTransaction: function(trans) {
       let newTrans = this.createTransaction(trans);
@@ -177,8 +190,8 @@ export default {
     },
     createTransaction: function(trans) {
       const profit = this.isClosedTransaction(trans)
-        ? this.calcProfit(trans, trans.sell_price)
-        : this.calcProfit(trans, this.exchangeRate);
+        ? calcProfit(trans, trans.sell_price)
+        : calcProfit(trans, this.exchangeRate);
 
       return {
         id: trans.id,
@@ -187,33 +200,22 @@ export default {
         ),
         date_of_sell: trans.hasOwnProperty("date_of_sell")
           ? formatter.getPrettyDate(new Date(trans.date_of_sell))
-          : undefined,
+          : "",
         quantity: trans.quantity,
-        purchase_price: trans.purchase_price.toFixed(2),
-        sell_price: trans.hasOwnProperty("sell_price")
-          ? trans.sell_price.toFixed(2)
-          : undefined,
-        profit_percentage: profit.margin.toFixed(2),
-        profit_usd: profit.profitInUSD.toFixed(2),
+        buy_amount: trans.buy_amount,
+        purchase_price: trans.buy_amount / trans.quantity,
+        sell_price: trans.sell_price,
+        sell_amount: this.getCurrentAmount(trans),
+        profit_percentage: profit.markup,
+        profit_usd: profit.profitInUSD,
         owner: trans.owner
       };
     },
-    isClosedTransaction: function(trans) {
-      return (
-        typeof trans.date_of_sell !== "undefined" &&
-        typeof trans.sell_price !== "undefined"
-      );
+    getCurrentAmount: function(trans) {
+      return "sell_price" in trans ? (trans.quantity * trans.sell_price) : (trans.quantity * this.exchangeRate);
     },
-    calcProfit: function(trans, exchangeRate) {
-      const floatQuantity = parseFloat(trans.quantity);
-      const floatPurchasePrice = parseFloat(trans.purchase_price);
-
-      let profitInUSD = floatQuantity * exchangeRate - floatQuantity * floatPurchasePrice;
-      let margin = (profitInUSD / (floatQuantity * exchangeRate)) * 100;
-      return {
-        profitInUSD: profitInUSD,
-        margin: margin
-      };
+    isClosedTransaction: function(trans) {
+      return !!trans.date_of_sell && !!trans.sell_price;
     },
     updateRow: function(item) {
       const newTrans = this.buildTransaction(item);
@@ -242,17 +244,18 @@ export default {
         id: item.id,
         quantity: item.quantity,
         date_of_purchase: new Date(item.date_of_purchase),
-        purchase_price: item.purchase_price,
+        buy_amount: item.buy_amount,
         owner: item.owner
       };
     },
     closeActualItem: function(dateOfSell, sellPrice) {
-      const profit = this.calcProfit(this.actualItem, sellPrice);
+      const profit = calcProfit(this.actualItem, sellPrice);
 
+      this.actualItem.sell_amount = this.actualItem.quantity * sellPrice;
       this.actualItem.date_of_sell = formatter.getPrettyDate(dateOfSell);
       this.actualItem.sell_price = parseFloat(sellPrice).toFixed(2);
-      this.actualItem.profit_usd = profit.profitInUSD.toFixed(2);
-      this.actualItem.profit_percentage = profit.margin.toFixed(2);
+      this.actualItem.profit_usd = profit.profitInUSD;
+      this.actualItem.profit_percentage = profit.markup;
     },
     openDeleteDialog: function(item) {
       this.actualItem = item;
@@ -263,11 +266,10 @@ export default {
         this.transactions,
         this.actualItem.id
       );
-      if(this.transactions.length == 0) {
+      if (this.transactions.length == 0) {
         this.pageCount -= 1;
         this.page -= 1;
-      }
-      else if (this.pageCount > 1) {
+      } else if (this.pageCount > 1) {
         this.initTransactions();
       }
       this.deleteDialog = false;
@@ -282,23 +284,26 @@ export default {
       item.date_of_purchase = formatter.getPrettyDate(
         new Date(this.prevPurchaseDate)
       );
+    },
+    getColor: function(item) {
+      return item.profit_percentage > 0 ? "green" : "red";
     }
   },
   watch: {
     exchangeRate: function(newExRate) {
       this.transactions.forEach(trans => {
-        if (trans.date_of_sell === undefined) {
-          let profit = this.calcProfit(trans, newExRate);
-          trans.profit_usd = profit.profitInUSD.toFixed(2);
-          trans.profit_percentage = profit.margin.toFixed(2);
+        if (trans.date_of_sell === "") {
+          trans.sell_amount = trans.quantity * this.exchangeRate;
+          let profit = calcProfit(trans, newExRate);
+          trans.profit_usd = profit.profitInUSD;
+          trans.profit_percentage = profit.markup;
         }
       });
     },
     newTransaction: function(trans) {
       if (this.numberOfItems > this.transactions.length) {
         this.addNewTransaction(trans);
-      }
-      else {
+      } else {
         this.pageCount += 1;
         this.page += 1;
       }
@@ -308,7 +313,7 @@ export default {
         this.componentKey += 1;
       }
     },
-    page: function () {
+    page: function() {
       this.initTransactions();
     }
   },
