@@ -11,7 +11,7 @@
     <v-content>
       <v-container>
         <v-row>
-          <v-col sm="3">
+          <v-col>
             <TransactionCreator
               @create="setNewTransaction"
             ></TransactionCreator>
@@ -19,8 +19,12 @@
             <ExchangeRateIndicator
               @refreshExchangeRate="refreshExRate"
             ></ExchangeRateIndicator>
+            <br/>
+            <CurrencyExchangePoint
+              :exchange-rate="exchangeRate">
+            </CurrencyExchangePoint>
           </v-col>
-          <v-col>
+          <v-col lg="10">
             <TransactionTable
               :exchangeRate="exchangeRate"
               :newTransaction="newTransaction"
@@ -33,13 +37,14 @@
 </template>
 
 <script>
-import TransactionCreator from "./TransactionCreator";
-import TransactionTable from "./TransactionTable";
-import ExchangeRateIndicator from "./ExchangeRateIndicator";
+import TransactionCreator from "./monitor/TransactionCreator";
+import TransactionTable from "./monitor/TransactionTable";
+import ExchangeRateIndicator from "./monitor/ExchangeRateIndicator";
+import CurrencyExchangePoint from "./monitor/CurrencyExchangePoint";
 
 export default {
   name: "CryptoMonitor",
-  components: { ExchangeRateIndicator, TransactionTable, TransactionCreator },
+  components: {CurrencyExchangePoint, ExchangeRateIndicator, TransactionTable, TransactionCreator },
   data: function() {
     return {
       exchangeRate: 0,

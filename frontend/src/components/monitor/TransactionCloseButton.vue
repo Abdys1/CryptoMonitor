@@ -1,5 +1,5 @@
 <template>
-  <span>
+  <div>
     <v-icon class="mr-2" small dark @click="openDialog">
       gavel
     </v-icon>
@@ -11,12 +11,12 @@
       @confirm="closeTransaction"
     >
     </CloseDialog>
-  </span>
+  </div>
 </template>
 
 <script>
-import Transaction from "./util/Transaction";
-import CloseDialog from "./dialogs/CloseDialog";
+import Transaction from "../util/Transaction";
+import CloseDialog from "../dialogs/CloseDialog";
 
 export default {
   name: "TransactionCloseButton",

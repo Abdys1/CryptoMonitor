@@ -1,9 +1,9 @@
 <template>
-  <v-card color="second">
+  <v-card color="second" class="box">
     <v-card-title>Aktuális árfolyam</v-card-title>
     <v-card-text>
       <div>
-        <h1>{{ floatExchangeRate }}</h1>
+        <h1>{{ parseFloat(exchangeRate).toFixed(2) + ' USD' }}</h1>
       </div>
     </v-card-text>
   </v-card>
@@ -18,11 +18,6 @@ export default {
     return {
       exchangeRate: 0
     };
-  },
-  computed: {
-    floatExchangeRate: function () {
-      return this.exchangeRate.toFixed(2);
-    }
   },
   mounted() {
     this.$connect();

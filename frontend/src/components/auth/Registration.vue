@@ -65,7 +65,7 @@
 </template>
 
 <script>
-import InfoModal from "./dialogs/InfoModal";
+import InfoModal from "../dialogs/InfoModal";
 
 export default {
   name: "Registration",

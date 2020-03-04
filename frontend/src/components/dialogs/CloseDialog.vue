@@ -3,7 +3,7 @@
     <v-dialog v-model="show" persistent max-width="290">
       <v-card>
         <v-card-title class="headline">Tranzakció lezárása</v-card-title>
-        <v-form ref="closeForm">
+        <v-form ref="closeForm" style="padding: 10px">
           <v-text-field
             label="Árfolyam az értékesítés pillanatában"
             prefix="$"
@@ -66,4 +66,5 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+</style>

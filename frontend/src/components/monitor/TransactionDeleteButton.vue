@@ -1,5 +1,5 @@
 <template>
-  <span>
+  <div>
     <v-icon small dark @click="dialog = true">
       delete
     </v-icon>
@@ -8,12 +8,12 @@
       @cancel="dialog = false"
       @confirm="deleteTransaction"
     ></DeleteDialog>
-  </span>
+  </div>
 </template>
 
 <script>
 
-import DeleteDialog from "./dialogs/DeleteDialog";
+import DeleteDialog from "../dialogs/DeleteDialog";
 export default {
   name: "TransactionDeleteButton",
   components: {DeleteDialog},

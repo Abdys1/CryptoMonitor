@@ -1,25 +1,24 @@
 <template>
-  <v-col>
+  <div>
     <v-data-table
       :headers="headers"
       :items="transactions"
-      :items-per-page="numberOfItems"
       :loading="loading"
       loading-text="Kis türelmet..."
       hide-default-footer
-      class="second elevation-1"
+      class="second box"
     >
       <template v-slot:no-data>
         Még nincs egyetlen aktív tranzakciód sem!
       </template>
       <template v-slot:item.date_of_purchase="props">
         <v-edit-dialog
-          v-if="!isClosedTransaction(props.item)"
+          v-if="!props.item.isClosedTransaction()"
           large
           persistent
           save-text="Mentés"
           cancel-text="Bezár"
-          @open="savePrevDateTime(props.item)"
+          @open="prevPurchaseDate = props.item.date_of_purchase"
           @save="updateRow(props.item)"
           @cancel="restorePrevPurchaseDate(props.item)"
         >
@@ -38,36 +37,35 @@
             </v-datetime-picker>
           </template>
         </v-edit-dialog>
-        <span v-if="isClosedTransaction(props.item)">{{
+        <span v-if="props.item.isClosedTransaction()">{{
           props.item.date_of_sell
         }}</span>
       </template>
       <template v-slot:item.quantity="props">
         <v-edit-dialog
           :return-value.sync="props.item.quantity"
-          v-if="!isClosedTransaction(props.item)"
+          v-if="!props.item.isClosedTransaction()"
         >
-          {{ props.item.quantity }}
+          {{ parseFloat(props.item.quantity).toFixed(6) + " BTC" }}
           <template v-slot:input>
             <v-text-field
               v-model="props.item.quantity"
               label="Szerkesztés"
               @keyup.enter="updateRow(props.item)"
               single-line
-              counter
             ></v-text-field>
           </template>
         </v-edit-dialog>
-        <span v-if="isClosedTransaction(props.item)">{{
-          props.item.quantity
+        <span v-if="props.item.isClosedTransaction()">{{
+          parseFloat(props.item.quantity).toFixed(6) + " BTC"
         }}</span>
       </template>
       <template v-slot:item.buy_amount="props">
         <v-edit-dialog
           :return-value.sync="props.item.buy_amount"
-          v-if="!isClosedTransaction(props.item)"
+          v-if="!props.item.isClosedTransaction()"
         >
-          {{ props.item.buy_amount }}
+          {{ parseFloat(props.item.buy_amount).toFixed(2) }}
           <template v-slot:input>
             <v-text-field
               v-model="props.item.buy_amount"
@@ -78,69 +76,93 @@
             ></v-text-field>
           </template>
         </v-edit-dialog>
-        <span v-if="isClosedTransaction(props.item)">{{
-          props.item.buy_amount
+        <span v-if="props.item.isClosedTransaction()">{{
+          props.item.buy_amount.toFixed(2)
         }}</span>
       </template>
       <template v-slot:item.profit_percentage="props">
         <v-chip :color="getColor(props.item)">{{
-          props.item.profit_percentage
+          parseFloat(props.item.profit_percentage).toFixed(2) + "%"
         }}</v-chip>
       </template>
       <template v-slot:item.profit_usd="props">
         <v-chip :color="getColor(props.item)">{{
-          props.item.profit_usd
+          parseFloat(props.item.profit_usd).toFixed(2) + " $"
         }}</v-chip>
       </template>
+      <template v-slot:item.sell_amount="props">
+        {{ props.item.sell_amount.toFixed(2) }}
+      </template>
+      <template v-slot:item.purchase_price="props">
+        {{ parseFloat(props.item.purchase_price).toFixed(2) }}
+      </template>
+      <template v-slot:item.sell_price="props">
+        <span v-if="props.item.isClosedTransaction()">
+          {{ parseFloat(props.item.sell_price).toFixed(2) }}
+        </span>
+      </template>
       <template v-slot:item.action="props">
-        <TransactionCloseButton
-          :exchange-rate="exchangeRate"
-          :trans="props.item"
-          @transClosed="initTransactions"
-        >
-        </TransactionCloseButton>
-        <TransactionDeleteButton
-          :trans-id="props.item.id"
-          @transDeleted="initTransactions"
-        >
-        </TransactionDeleteButton>
+        <div class="operations">
+          <TransactionCloseButton
+            :exchange-rate="exchangeRate"
+            :trans="props.item"
+            @transClosed="initTransactions"
+          >
+          </TransactionCloseButton>
+          <TransactionDeleteButton
+            :trans-id="props.item.id"
+            @transDeleted="initTransactions"
+          >
+          </TransactionDeleteButton>
+        </div>
       </template>
     </v-data-table>
 
-    <div class="text-center pt-2">
+    <div class="text-center pt-2" style="display: flex">
       <v-pagination
         v-model="page"
         :length="pageCount"
         :total-visible="6"
         dark
       ></v-pagination>
+      <v-text-field
+        :value="numberOfItems"
+        label="Megjelenített tranzakciók"
+        type="number"
+        min="-1"
+        max="15"
+        @input="numberOfItems = parseInt($event, 10)"
+        @keydown.enter="changeItemsPerPage"
+        class="itemNumberSelector"
+      ></v-text-field>
     </div>
-  </v-col>
+  </div>
 </template>
 
 <script>
-import formatter from "./util/DateFormatter";
-import calcProfit from "./util/ProfitCalculator";
+import formatter from "../util/DateFormatter";
+import calcProfit from "../util/ProfitCalculator";
 import TransactionDeleteButton from "./TransactionDeleteButton";
-import Transaction from "./util/Transaction";
+import Transaction from "../util/Transaction";
 import TransactionCloseButton from "./TransactionCloseButton";
+import TransactionTableItem from "../util/TransactionTableItem";
 
 export default {
   name: "TransactionTable",
-  components: {TransactionCloseButton, TransactionDeleteButton},
+  components: { TransactionCloseButton, TransactionDeleteButton },
   props: { exchangeRate: Number, newTransaction: Object },
   data: function() {
     return {
       headers: [
         { text: "Vásárlás dátuma", value: "date_of_purchase" },
         { text: "Értékesítés dátuma", value: "date_of_sell" },
-        { text: "Árfolyam a vásárlás időpontjában", value: "purchase_price" },
-        { text: "Elköltött összeg $", value: "buy_amount" },
-        { text: "Mennyiség", value: "quantity" },
-        { text: "Árfolyam az értékesítés időpontjában", value: "sell_price" },
-        { text: "Jelenlegi összeg $", value: "sell_amount" },
-        { text: "Haszonkulcs", value: "profit_percentage" },
-        { text: "Nyereség", value: "profit_usd" },
+        { text: "Árfolyam a vásárlás időpontjában (USDT)", value: "purchase_price" },
+        { text: "Elköltött összeg (USDT)", value: "buy_amount" },
+        { text: "Mennyiség (BTC)", value: "quantity" },
+        { text: "Árfolyam az értékesítés időpontjában (USDT)", value: "sell_price" },
+        { text: "Jelenlegi összeg (USDT)", value: "sell_amount" },
+        { text: "Nyereség (USDT)", value: "profit_usd" },
+        { text: "Haszonkulcs %", value: "profit_percentage" },
         { text: "Műveletek", value: "action" }
       ],
       numberOfItems: 10,
@@ -156,7 +178,7 @@ export default {
       this.transactions = [];
       this.loading = true;
       this.$transAPI
-        .getUsersTransactions(this.page)
+        .getUsersTransactions(this.page, this.numberOfItems)
         .then(response => {
           this.pageCount = response["pageCount"];
           let transactions = response["transactions"];
@@ -168,39 +190,8 @@ export default {
         .catch(() => (this.loading = false));
     },
     addNewTransaction: function(trans) {
-      let newTrans = this.createTransaction(trans);
+      let newTrans = new TransactionTableItem(trans, this.exchangeRate);
       this.transactions.push(newTrans);
-    },
-    createTransaction: function(trans) {
-      const profit = this.isClosedTransaction(trans)
-        ? calcProfit(trans, trans.sell_price)
-        : calcProfit(trans, this.exchangeRate);
-
-      return {
-        id: trans.id,
-        date_of_purchase: formatter.getPrettyDate(
-          new Date(trans.date_of_purchase)
-        ),
-        date_of_sell: trans.hasOwnProperty("date_of_sell")
-          ? formatter.getPrettyDate(new Date(trans.date_of_sell))
-          : "",
-        quantity: trans.quantity,
-        buy_amount: trans.buy_amount,
-        purchase_price: trans.buy_amount / trans.quantity,
-        sell_price: trans.sell_price,
-        sell_amount: this.getCurrentAmount(trans),
-        profit_percentage: profit.markup,
-        profit_usd: profit.profitInUSD,
-        owner: trans.owner
-      };
-    },
-    getCurrentAmount: function(trans) {
-      return "sell_price" in trans
-        ? trans.quantity * trans.sell_price
-        : trans.quantity * this.exchangeRate;
-    },
-    isClosedTransaction: function(trans) {
-      return !!trans.date_of_sell && !!trans.sell_price;
     },
     updateRow: function(item) {
       const newTrans = new Transaction(item);
@@ -211,9 +202,6 @@ export default {
     formatDateTime: function(datetime, item) {
       item.date_of_purchase = formatter.getPrettyDate(datetime);
     },
-    savePrevDateTime: function(item) {
-      this.prevPurchaseDate = item.date_of_purchase;
-    },
     restorePrevPurchaseDate: function(item) {
       item.date_of_purchase = formatter.getPrettyDate(
         new Date(this.prevPurchaseDate)
@@ -221,12 +209,18 @@ export default {
     },
     getColor: function(item) {
       return item.profit_percentage > 0 ? "green" : "red";
+    },
+    changeItemsPerPage: function() {
+      if (this.numberOfItems) {
+        this.page > 1 ? (this.page = 1) : this.initTransactions();
+      }
     }
   },
   watch: {
     exchangeRate: function(newExRate) {
       this.transactions.forEach(trans => {
-        if (trans.date_of_sell === "") {
+        if (!trans.isClosedTransaction()) {
+          trans.purchase_price = trans.buy_amount / trans.quantity;
           trans.sell_amount = trans.quantity * this.exchangeRate;
           let profit = calcProfit(trans, newExRate);
           trans.profit_usd = profit.profitInUSD;
@@ -252,4 +246,11 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+.operations div {
+  display: inline-block;
+}
+/*.itemNumberSelector {*/
+/*  width: 20%;*/
+/*}*/
+</style>

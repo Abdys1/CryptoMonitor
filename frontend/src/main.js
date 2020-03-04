@@ -6,12 +6,14 @@ import App from "./App.vue";
 import vuetify from "./plugins/vuetify";
 import axios from "axios";
 import Authentication from "./Authentication";
-import Login from "./components/Login";
-import Registration from "./components/Registration";
+import Login from "./components/auth/Login";
+import Registration from "./components/auth/Registration";
 import CryptoMonitor from "./components/CryptoMonitor";
 import VueNativeSock from "vue-native-websocket";
 import TransactionController from "./components/util/TransactionAPI";
 import AuthenticationAPI from "./components/util/AuthenticationAPI";
+
+import "./main.css"
 
 Vue.config.productionTip = false;
 Vue.use(VueRouter);

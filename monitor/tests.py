@@ -146,16 +146,26 @@ class TransactionMonitorTest(APITestCase):
                                                 date_of_purchase=self.actual_time,
                                                 owner=self.user)
 
-        response = self.client.get(self.url + "?page_num=1")
+        response = self.client.get(self.url + "?page_num=1&item_per_page=10")
         ord_dicts = response.data["transactions"]
         result_trans = self.transactionOrderDictToList(ord_dicts)
         self.assertListEqual(result_trans, first_ten_trans)
 
-        response = self.client.get(self.url + "?page_num=2")
+        response = self.client.get(self.url + "?page_num=2&item_per_page=10")
         ord_dicts = response.data["transactions"]
         result_trans = self.transactionOrderDictToList(ord_dicts)
         self.assertListEqual(result_trans, [last_trans])
         self.assertEquals(response.data["pageCount"], 2)
+
+    def test_when_has_4_transaction_and_item_per_page_2_then_has_two_page(self):
+        for i in range(4):
+            Transaction.objects.create(quantity=213,
+                                       buy_amount=3213,
+                                       date_of_purchase=self.actual_time,
+                                       owner=self.user)
+        response = self.client.get(self.url + "?page_num=1&item_per_page=2")
+        self.assertEquals(response.data["pageCount"], 2)
+
 
     def transactionOrderDictToList(self, ord_dicts):
         result = []

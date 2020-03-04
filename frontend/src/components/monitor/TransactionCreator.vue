@@ -1,21 +1,23 @@
 <template>
   <div>
-    <v-card color="second">
+    <v-card color="second" class="box">
       <v-card-title>Új tranzakció felvétele</v-card-title>
       <v-card-text>
         <div>
           <v-form ref="form">
             <v-text-field
-              label="Árfolyam"
+              label="Elköltött összeg (USDT)"
               prefix="$"
               type="number"
+              min="1"
               v-model="buyAmount"
               :rules="validateRules"
             ></v-text-field>
             <v-text-field
-              label="Mennyiség"
+              label="Vásárolt mennyiség (BTC)"
               v-model="quantity"
               type="number"
+              min="1"
               :rules="validateRules"
             >
             </v-text-field>
@@ -42,7 +44,7 @@
 </template>
 
 <script>
-import InfoModal from "./dialogs/InfoModal";
+import InfoModal from "../dialogs/InfoModal";
 
 export default {
   name: "TransactionCreator",
@@ -53,7 +55,10 @@ export default {
       quantity: null,
       purchaseDate: null,
       userID: null,
-      validateRules: [v => !!v || "Kérem adjon meg egy érvényes értéket!"],
+      validateRules: [
+        v => !!v || "Kérem adjon meg egy számot!",
+        v => parseFloat(v) > 0 || "Kérem adjon meg egy pozitív számot!"
+      ],
       textFieldProps: {
         rules: [v => !!v || "Kérem adjon meg egy érvényes dátumot!"]
       },
