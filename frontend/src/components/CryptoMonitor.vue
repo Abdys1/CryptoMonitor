@@ -1,12 +1,23 @@
 <template>
   <v-app class="content">
-    <v-app-bar app dark>
-      <v-toolbar-title>Kriptomonitor</v-toolbar-title>
-      <v-spacer />
-      <v-btn class="mx-2" fab dark @click="exitApp">
-        <v-icon>mdi-exit-to-app</v-icon>
-      </v-btn>
-    </v-app-bar>
+    <v-layout row justify-center>
+      <v-app-bar app dark class="hidden-xs-and-down" dense>
+        <v-toolbar-title>Kriptomonitor</v-toolbar-title>
+        <v-toolbar-items>
+          <v-btn
+            v-for="item in menuItems"
+            :key="item.icon"
+            :to="item.to"
+            :title="item.title"
+            >{{ item.text }}</v-btn
+          >
+        </v-toolbar-items>
+        <v-spacer />
+        <v-btn class="mx-2" fab dark @click="exitApp">
+          <v-icon>mdi-exit-to-app</v-icon>
+        </v-btn>
+      </v-app-bar>
+    </v-layout>
 
     <v-content>
       <v-container>
@@ -19,9 +30,8 @@
             <ExchangeRateIndicator
               @refreshExchangeRate="refreshExRate"
             ></ExchangeRateIndicator>
-            <br/>
-            <CurrencyExchangePoint
-              :exchange-rate="exchangeRate">
+            <br />
+            <CurrencyExchangePoint :exchange-rate="exchangeRate">
             </CurrencyExchangePoint>
           </v-col>
           <v-col lg="10">
@@ -44,11 +54,30 @@ import CurrencyExchangePoint from "./monitor/CurrencyExchangePoint";
 
 export default {
   name: "CryptoMonitor",
-  components: {CurrencyExchangePoint, ExchangeRateIndicator, TransactionTable, TransactionCreator },
+  components: {
+    CurrencyExchangePoint,
+    ExchangeRateIndicator,
+    TransactionTable,
+    TransactionCreator
+  },
   data: function() {
     return {
       exchangeRate: 0,
-      newTransaction: null
+      newTransaction: null,
+      menuItems: [
+        {
+          icon: "open",
+          title: "Open transactions",
+          text: "Nyitott tranzakciók",
+          to: "/monitor/open"
+        },
+        {
+          icon: "closed",
+          title: "Closed transactions",
+          text: "Lezárt tranzakciók",
+          to: "/monitor/closed"
+        }
+      ]
     };
   },
   methods: {
@@ -58,9 +87,9 @@ export default {
     setNewTransaction: function(newTrans) {
       this.newTransaction = newTrans;
     },
-    exitApp: function () {
+    exitApp: function() {
       this.$http.defaults.headers.common["Authorization"] = "";
-      window.cookie = "Authorization=";
+      document.cookie = "Authorization=";
       this.$session.destroy();
       this.$router.push("/");
     }
@@ -70,7 +99,10 @@ export default {
       this.$http.defaults.headers.common["Authorization"] =
         "Token " + this.$session.get("jwt");
     } else {
-      this.exitApp();
+      this.$http.defaults.headers.common["Authorization"] = "";
+      document.cookie = "Authorization=";
+      this.$session.destroy();
+      this.$router.push("/");
     }
   }
 };

@@ -4,10 +4,10 @@ class TransactionController {
     this.url = "/api/transaction";
   }
 
-  getUsersTransactions(pageNumber, itemPerPage) {
+  getUsersTransactions(pageNumber, itemPerPage, type) {
     return new Promise((resolve, reject) => {
       this.http
-        .get(this.url + `?page_num=${pageNumber}&item_per_page=${itemPerPage}`)
+        .get(this.url + `?page_num=${pageNumber}&item_per_page=${itemPerPage}&filter=${type}`)
         .then(response => {
           if (
             response.data.hasOwnProperty("transactions") &&

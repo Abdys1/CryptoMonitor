@@ -67,7 +67,7 @@ export default {
       this.$session.start();
       this.$session.set("jwt", token);
       document.cookie = "Authorization=Token " + token;
-      this.$router.push("/monitor");
+      this.$router.push("/monitor/open");
     }
   }
 };

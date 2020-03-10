@@ -1,7 +1,7 @@
 import Vue from "vue";
 import VueRouter from "vue-router";
 import VueSession from "vue-session";
-import DatetimePicker from 'vuetify-datetime-picker'
+import DatetimePicker from "vuetify-datetime-picker";
 import App from "./App.vue";
 import vuetify from "./plugins/vuetify";
 import axios from "axios";
@@ -13,7 +13,7 @@ import VueNativeSock from "vue-native-websocket";
 import TransactionController from "./components/util/TransactionAPI";
 import AuthenticationAPI from "./components/util/AuthenticationAPI";
 
-import "./main.css"
+import "./main.css";
 
 Vue.config.productionTip = false;
 Vue.use(VueRouter);
@@ -43,7 +43,11 @@ const routes = [
       { path: "/registration", component: Registration }
     ]
   },
-  { path: "/monitor", component: CryptoMonitor }
+  {
+    path: "/monitor/open",
+    component: CryptoMonitor,
+    alias: "/monitor/closed"
+  }
 ];
 
 const router = new VueRouter({

@@ -149,17 +149,26 @@ import TransactionTableItem from "../util/TransactionTableItem";
 
 export default {
   name: "TransactionTable",
-  components: { TransactionCloseButton, TransactionDeleteButton },
+  components: {
+    TransactionCloseButton,
+    TransactionDeleteButton
+  },
   props: { exchangeRate: Number, newTransaction: Object },
   data: function() {
     return {
       headers: [
         { text: "Vásárlás dátuma", value: "date_of_purchase" },
         { text: "Értékesítés dátuma", value: "date_of_sell" },
-        { text: "Árfolyam a vásárlás időpontjában (USDT)", value: "purchase_price" },
+        {
+          text: "Árfolyam a vásárlás időpontjában (USDT)",
+          value: "purchase_price"
+        },
         { text: "Elköltött összeg (USDT)", value: "buy_amount" },
         { text: "Mennyiség (BTC)", value: "quantity" },
-        { text: "Árfolyam az értékesítés időpontjában (USDT)", value: "sell_price" },
+        {
+          text: "Árfolyam az értékesítés időpontjában (USDT)",
+          value: "sell_price"
+        },
         { text: "Jelenlegi összeg (USDT)", value: "sell_amount" },
         { text: "Nyereség (USDT)", value: "profit_usd" },
         { text: "Haszonkulcs %", value: "profit_percentage" },
@@ -170,7 +179,9 @@ export default {
       loading: false,
       pageCount: 0,
       prevPurchaseDate: null,
-      transactions: []
+      transactions: [],
+      statisticKey: 0,
+      type: "open"
     };
   },
   methods: {
@@ -178,7 +189,7 @@ export default {
       this.transactions = [];
       this.loading = true;
       this.$transAPI
-        .getUsersTransactions(this.page, this.numberOfItems)
+        .getUsersTransactions(this.page, this.numberOfItems, this.type)
         .then(response => {
           this.pageCount = response["pageCount"];
           let transactions = response["transactions"];
@@ -229,14 +240,21 @@ export default {
       });
     },
     newTransaction: function(trans) {
-      if (this.numberOfItems > this.transactions.length) {
-        this.addNewTransaction(trans);
-      } else {
-        this.pageCount += 1;
-        this.page += 1;
+      if (this.type === "open") {
+        if (this.numberOfItems > this.transactions.length) {
+          this.addNewTransaction(trans);
+        } else {
+          this.pageCount += 1;
+          this.page += 1;
+        }
       }
     },
     page: function() {
+      this.initTransactions();
+    },
+    $route(to) {
+      this.type = to.fullPath === "/monitor/open" ? "open" : "closed";
+      this.page = 1;
       this.initTransactions();
     }
   },
@@ -250,7 +268,4 @@ export default {
 .operations div {
   display: inline-block;
 }
-/*.itemNumberSelector {*/
-/*  width: 20%;*/
-/*}*/
 </style>

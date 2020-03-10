@@ -32,6 +32,12 @@ class TransactionDetail(mixins.CreateModelMixin,
     def get(self, request) -> Response:
         user = request.user
         transactions = Transaction.objects.filter(owner=user)
+        if "filter" in request.GET:
+            if request.GET["filter"] == "open":
+                transactions = [trans for trans in transactions if trans.date_of_sell is None]
+            else:
+                transactions = [trans for trans in transactions if trans.date_of_sell is not None]
+
         if "page_num" in request.GET:
             item_per_page = 10
             if "item_per_page" in request.GET:

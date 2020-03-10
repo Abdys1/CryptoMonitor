@@ -7,7 +7,6 @@
           <v-form ref="form">
             <v-text-field
               label="Elköltött összeg (USDT)"
-              prefix="$"
               type="number"
               min="1"
               v-model="buyAmount"
@@ -124,4 +123,5 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+</style>
