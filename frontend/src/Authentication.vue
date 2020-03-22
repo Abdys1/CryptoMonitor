@@ -3,9 +3,9 @@
     <v-container class="content" fluid>
       <v-row align="center" justify="center" style="height: 100%">
         <v-col lg="4">
-          <v-card class="auth-box" elevation="13">
+          <v-card class="auth-box">
             <v-card-actions class="justify-center">
-              <v-img src="./assets/bitcoin.png" width="160px" height="160px" />
+              <v-img src="@/assets/bitcoin.png" width="160px" height="160px" />
               <router-view> </router-view>
             </v-card-actions>
           </v-card>

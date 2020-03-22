@@ -1,3 +1,5 @@
-.box {
-    box-shadow: 0px 0px 5px yellow;
-  }
+.box,
+.auth-box {
+  background: black;
+  box-shadow: 0px 0px 5px yellow;
+}

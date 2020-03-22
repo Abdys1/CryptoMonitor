@@ -8,12 +8,12 @@ import axios from "axios";
 import Authentication from "./Authentication";
 import Login from "./components/auth/Login";
 import Registration from "./components/auth/Registration";
-import CryptoMonitor from "./components/CryptoMonitor";
 import VueNativeSock from "vue-native-websocket";
 import TransactionController from "./components/util/TransactionAPI";
 import AuthenticationAPI from "./components/util/AuthenticationAPI";
 
 import "./main.css";
+import CryptoMonitor from "./components/CryptoMonitor";
 
 Vue.config.productionTip = false;
 Vue.use(VueRouter);

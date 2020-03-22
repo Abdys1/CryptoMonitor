@@ -1,14 +1,17 @@
 <template>
   <v-app class="content">
     <v-layout row justify-center>
-      <v-app-bar app dark class="hidden-xs-and-down" dense>
-        <v-toolbar-title>Kriptomonitor</v-toolbar-title>
+      <v-app-bar app color="black" class="hidden-xs-and-down">
+        <v-toolbar-title style="padding-right: 20px"
+          ><v-img src="@/assets/bitcoin.png" width="50px" height="50px"></v-img
+        ></v-toolbar-title>
         <v-toolbar-items>
           <v-btn
             v-for="item in menuItems"
             :key="item.icon"
             :to="item.to"
             :title="item.title"
+            color="black"
             >{{ item.text }}</v-btn
           >
         </v-toolbar-items>
@@ -114,5 +117,9 @@ export default {
   background-repeat: no-repeat;
   background-size: cover;
   height: 100%;
+}
+
+.v-btn:hover:before {
+  background-color: yellow;
 }
 </style>
