@@ -31,12 +31,6 @@ class TransactionController {
   //TODO Ha nem érvényes a tranzakció, akkor ne küldje el a szervernek
 
   deleteTransaction(deletedTransID) {
-    // return this.http.delete(this.url + `\\${deletedTransID}`).then(() => {
-    //   let filtered = transactions.filter(function(value) {
-    //     return value.id !== deletedTransID;
-    //   });
-    //   return filtered;
-    // });
     return new Promise((resolve, reject) => {
       this.http
         .delete(this.url + `\\${deletedTransID}`)
