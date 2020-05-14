@@ -42,13 +42,11 @@ class TransactionDetail(mixins.CreateModelMixin,
             item_per_page = 10
             if "item_per_page" in request.GET:
                 item_per_page = int(request.GET["item_per_page"])
-
             page_number = int(request.GET["page_num"])
             paginator = Paginator(list(transactions), item_per_page)
             page_count = paginator.num_pages
             page = paginator.page(page_number)
             serializer = TransactionSerializer(page.object_list, many=True)
-
             return Response(data={"pageCount": page_count, "transactions": serializer.data})
         else:
             serializer = TransactionSerializer(transactions, many=True)

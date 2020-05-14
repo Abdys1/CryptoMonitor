@@ -60,7 +60,7 @@ class AuthenticationAPI {
   getUserInformation() {
     return new Promise((resolve, reject) => {
       this.http
-          .get("/auth/account")
+          .get(this.urls.account)
           .then(response => {
             resolve(response.data);
           })

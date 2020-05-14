@@ -35,6 +35,16 @@ class TransactionTableItem {
   isClosedTransaction() {
     return !!this.date_of_sell && !!this.sell_price;
   }
+
+  getResponseFormat() {
+    return {
+      id: this.id,
+      quantity: parseFloat(this.quantity),
+      date_of_purchase: new Date(this.date_of_purchase),
+      buy_amount: parseFloat(this.buy_amount),
+      owner: this.owner
+    }
+  }
 }
 
 export default TransactionTableItem;

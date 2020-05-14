@@ -6,7 +6,7 @@
           <v-card class="auth-box">
             <v-card-actions class="justify-center">
               <v-img src="@/assets/bitcoin.png" width="160px" height="160px" />
-              <router-view> </router-view>
+              <router-view></router-view>
             </v-card-actions>
           </v-card>
         </v-col>

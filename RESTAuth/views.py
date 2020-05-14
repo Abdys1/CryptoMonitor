@@ -8,10 +8,6 @@ from rest_framework.views import APIView
 from .auth import UserRegistrationHandler
 
 
-class ActivateRegistration(APIView):
-    pass
-
-
 class UserRegistration(APIView):
     permission_classes = (AllowAny,)
     authentication_classes = ()

@@ -14,7 +14,7 @@ class CryptoMarket:
                 price = float(response.json().get("price"))
                 return price
             else:
-                raise CannotGetMarketInfo("Cannot get exchange rate!")
+                raise CannotGetMarketInfo("Cannot get exchange  rate!")
         except requests.exceptions.ConnectionError:
             print("Connection refused")
 

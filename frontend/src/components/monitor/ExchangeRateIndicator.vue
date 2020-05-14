@@ -3,7 +3,7 @@
     <v-card-title>Aktuális árfolyam</v-card-title>
     <v-card-text>
       <div>
-        <h1>{{ parseFloat(exchangeRate).toFixed(2) + ' USDT' }}</h1>
+        <h1>{{ exchangeRate.toFixed(2) + ' USDT' }}</h1>
       </div>
     </v-card-text>
   </v-card>

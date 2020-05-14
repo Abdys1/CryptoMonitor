@@ -28,8 +28,6 @@ DEBUG = True
 ALLOWED_HOSTS = []
 
 
-# Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -87,7 +85,7 @@ DATABASES = {
         'NAME': 'monitor',
         'HOST': '127.0.0.1',
         'PORT': '3306',
-        'USER': 'mysql',
+        'USER': 'root',
         'PASSWORD': 'root',
     }
 }

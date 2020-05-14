@@ -1,11 +1,5 @@
-import json
-from asyncio.exceptions import CancelledError, TimeoutError
-
-import pytest
 import requests
-from unittest.mock import patch
 
-from channels.testing import WebsocketCommunicator
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.utils import timezone
@@ -14,11 +8,9 @@ from rest_framework.authtoken.models import Token
 from rest_framework.test import APITestCase
 from django.core.exceptions import ObjectDoesNotExist
 
-from CryptoMonitor import routing
 from .serializers import TransactionSerializer
 from .models import Transaction
-from .service import market, CryptoMarket
-from channels.db import database_sync_to_async
+from .service import market
 
 
 class TransactionMonitorTest(APITestCase):
@@ -57,7 +49,7 @@ class TransactionMonitorTest(APITestCase):
         trans_id = response.data.get("id")
         transaction = Transaction.objects.get(pk=trans_id)
         serialized_trans = TransactionSerializer(transaction)
-        self.assertEquals(serialized_trans.data.get("quantity"), response.data.get("quantity"))
+        self.assertEqual(serialized_trans.data.get("quantity"), response.data.get("quantity"))
         self.assertTrue(isinstance(response.data.get("quantity"), float))
 
     def test_user_cannot_create_transaction_with_other_owner(self) -> None:
@@ -155,7 +147,7 @@ class TransactionMonitorTest(APITestCase):
         ord_dicts = response.data["transactions"]
         result_trans = self.transactionOrderDictToList(ord_dicts)
         self.assertListEqual(result_trans, [last_trans])
-        self.assertEquals(response.data["pageCount"], 2)
+        self.assertEqual(response.data["pageCount"], 2)
 
     def test_when_has_4_transaction_and_item_per_page_2_then_has_two_page(self):
         for i in range(4):
@@ -164,7 +156,7 @@ class TransactionMonitorTest(APITestCase):
                                        date_of_purchase=self.actual_time,
                                        owner=self.user)
         response = self.client.get(self.url + "?page_num=1&item_per_page=2")
-        self.assertEquals(response.data["pageCount"], 2)
+        self.assertEqual(response.data["pageCount"], 2)
 
 
     def transactionOrderDictToList(self, ord_dicts):
@@ -206,7 +198,7 @@ class TransactionMonitorTest(APITestCase):
         new_trans = Transaction(id=-1, quantity=2, buy_amount=9000.0, date_of_purchase=self.actual_time, owner=self.other_user)
         serialized_trans = TransactionSerializer(new_trans)
         response = self.client.put(self.url + "/" + str(trans.pk), serialized_trans.data)
-        self.assertEquals(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_when_close_transaction_then_profit_and_date_of_sell_in_response(self):
         trans = Transaction.objects.create(quantity=self.quantity,
@@ -241,7 +233,7 @@ class TransactionMonitorTest(APITestCase):
             Transaction.objects.get(pk=trans.pk)
             self.fail("Transaction is still alive!")
         except ObjectDoesNotExist:
-            self.assertEquals(response.status_code, status.HTTP_200_OK)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_cannot_delete_when_the_trans_not_exist(self):
         trans = Transaction.objects.create(quantity=self.quantity,
@@ -250,7 +242,7 @@ class TransactionMonitorTest(APITestCase):
                                            owner=self.user)
         self.client.delete(self.url + "/" + str(trans.pk))
         response = self.client.delete(self.url + "/" + str(trans.pk))
-        self.assertEquals(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_cannot_delete_other_users_trans(self):
         trans = Transaction.objects.create(quantity=self.quantity,
@@ -258,7 +250,7 @@ class TransactionMonitorTest(APITestCase):
                                            date_of_purchase=self.actual_time,
                                            owner=self.other_user)
         response = self.client.delete(self.url + "/" + str(trans.pk))
-        self.assertEquals(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 
 class CryptoMarketAPITest(TestCase):
@@ -274,85 +266,3 @@ class CryptoMarketAPITest(TestCase):
         mark_response = market.get_exchange_rate()
         if abs(float(req_response.json().get("price")) - mark_response) > 5:
             self.fail("Not right exchange rate!")
-
-
-@pytest.mark.asyncio
-async def test_cannot_connect_to_ws_when_not_authorized():
-    try:
-        communicator = WebsocketCommunicator(routing.application, "/ws/exchangeRate")
-        await communicator.connect()
-        await communicator.disconnect()
-        raise AssertionError("Successful connecting without authentication")
-    except (CancelledError, TimeoutError):
-        assert True
-
-
-@pytest.mark.asyncio
-@pytest.mark.django_db(transaction=True)
-async def test_can_connect_and_send_message_to_ws_when_authorized():
-    user = await database_sync_to_async(User.objects.create)(username="User6", password="1234567",
-                                                             email="example6@gmail.com")
-    token = await database_sync_to_async(Token.objects.create)(user=user)
-
-    token_str = "Authorization=Token " + str(token) + "; csrftoken=123123124asdsar"
-    headers = [(b"cookie", token_str.encode())]
-    try:
-        communicator = WebsocketCommunicator(routing.application, "/ws/exchangeRate", headers=headers)
-        await communicator.connect()
-        await communicator.send_to(text_data="Hello")
-        response = await communicator.receive_from()
-        await communicator.disconnect()
-        assert response is not None
-    except (CancelledError, TimeoutError):
-        raise AssertionError("Cannot connect with token!")
-
-
-@pytest.fixture
-@pytest.mark.asyncio
-async def get_communicator(django_db_setup, django_db_blocker):
-    with django_db_blocker.unblock():
-        user, created = await database_sync_to_async(User.objects.get_or_create)(username="User5", password="1234567",
-                                                                                 email="example5@gmail.com")
-        token, created = await database_sync_to_async(Token.objects.get_or_create)(user=user)
-        token_str = "Authorization=Token " + str(token)
-        headers = [(b"cookie", token_str.encode())]
-        return WebsocketCommunicator(routing.application, "/ws/exchangeRate", headers=headers)
-
-
-@pytest.mark.asyncio
-@pytest.mark.django_db
-async def test_when_disconnect_then_cannot_send_message(get_communicator):
-    communicator = get_communicator
-    try:
-        await communicator.connect()
-        await communicator.disconnect()
-        await communicator.send_to(text_data="Hello")
-        response = await communicator.receive_from()
-        raise AssertionError("Can send message after disconnect")
-    except:
-        assert True
-
-
-@pytest.mark.asyncio
-@pytest.mark.django_db
-async def test_when_send_get_exchange_rate_then_response_actual_exchange_rate(get_communicator):
-    actual_exchange_rate = 7321.0
-    with patch.object(CryptoMarket, 'get_exchange_rate', return_value=actual_exchange_rate) as mock_exchange_rate_call:
-        communicator = get_communicator
-        await communicator.connect()
-        await communicator.send_to(text_data="get_exchange_rate")
-        response = await communicator.receive_from()
-        mock_exchange_rate_call.assert_called_once_with()
-        await communicator.disconnect()
-        assert float(response) == actual_exchange_rate
-
-
-@pytest.mark.asyncio
-@pytest.mark.django_db
-async def test_when_send_undefined_message_to_ws_then_send_wrong_message(get_communicator):
-    communicator = get_communicator
-    await communicator.connect()
-    await communicator.send_to(text_data="saqwe")
-    response = await communicator.receive_from()
-    await communicator.disconnect()
-    assert response == "wrong_msg"

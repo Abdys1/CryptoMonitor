@@ -143,7 +143,6 @@
 import formatter from "../util/DateFormatter";
 import calcProfit from "../util/ProfitCalculator";
 import TransactionDeleteButton from "./TransactionDeleteButton";
-import Transaction from "../util/Transaction";
 import TransactionCloseButton from "./TransactionCloseButton";
 import TransactionTableItem from "../util/TransactionTableItem";
 
@@ -192,7 +191,7 @@ export default {
         .getUsersTransactions(this.page, this.numberOfItems, this.type)
         .then(response => {
           this.pageCount = response["pageCount"];
-          let transactions = response["transactions"];
+          let transactions   = response["transactions"];
           transactions.forEach(trans => {
             this.addNewTransaction(trans);
           });
@@ -205,7 +204,7 @@ export default {
       this.transactions.push(newTrans);
     },
     updateRow: function(item) {
-      const newTrans = new Transaction(item);
+      const newTrans = item.getResponseFormat();
       this.$transAPI
         .updateTransaction(newTrans)
         .catch(response => window.console.log(response));

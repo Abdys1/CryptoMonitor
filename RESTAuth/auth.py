@@ -19,7 +19,6 @@ class UserRegistrationHandler:
             user.is_active = True
             user.save()
             Token.objects.create(user=user)
-            # self.send_activation_message(user)
             success = True
         else:
             success = False

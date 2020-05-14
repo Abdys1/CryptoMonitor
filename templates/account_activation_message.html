@@ -1,4 +1,0 @@
-{% autoescape off %}
-Kedves {{ user.username }},
-kérlek kattints a következő linkre, hogy aktiváld a regisztrációdat: http://{{ domain }}{% url 'activate' %}?hash={{token}}
-{% endautoescape %}
